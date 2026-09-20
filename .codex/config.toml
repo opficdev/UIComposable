@@ -1,0 +1,14 @@
+[agents]
+max_concurrent_threads_per_session = 4
+
+[agents.designer]
+config_file = "./agents/designer.toml"
+
+[agents.architecture_watcher]
+config_file = "./agents/architecture_watcher.toml"
+
+[agents.code_reviewer]
+config_file = "./agents/code_reviewer.toml"
+
+[agents.verification_runner]
+config_file = "./agents/verification_runner.toml"

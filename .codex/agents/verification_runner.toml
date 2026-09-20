@@ -1,0 +1,9 @@
+name = "verification_runner"
+description = "Performs independent release and complex regression verification"
+model = "gpt-5.6-luna"
+model_reasoning_effort = "high"
+developer_instructions = """
+Use only when the user requests independent verification or release verification is required.
+Run the build, test, lint, and failure reproduction checks that match the changed scope, then separately report commands, results, and limitations.
+Do not modify code outside the verification objective.
+"""
