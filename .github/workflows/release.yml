@@ -47,18 +47,26 @@ jobs:
             exit 1
           fi
 
-      - name: Ensure tag does not exist
+      - name: Validate existing remote tag
+        id: tag
+        env:
+          COMMIT_SHA: ${{ steps.commit.outputs.sha }}
         shell: bash
         run: |
           set -euo pipefail
-          if git rev-parse "refs/tags/$VERSION" >/dev/null 2>&1; then
-            echo "Tag already exists locally: $VERSION" >&2
+          remote_revision="$(git ls-remote --tags origin "refs/tags/$VERSION^{}" | awk '{print $1}')"
+          if [[ -z "$remote_revision" ]]; then
+            remote_revision="$(git ls-remote --tags origin "refs/tags/$VERSION" | awk '{print $1}')"
+          fi
+          if [[ -z "$remote_revision" ]]; then
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          if [[ "$remote_revision" != "$COMMIT_SHA" ]]; then
+            echo "Existing tag does not point to the verified commit" >&2
             exit 1
           fi
-          if [[ -n "$(git ls-remote --tags origin "refs/tags/$VERSION")" ]]; then
-            echo "Tag already exists on origin: $VERSION" >&2
-            exit 1
-          fi
+          echo "exists=true" >> "$GITHUB_OUTPUT"
 
       - name: Build
         run: swift build
@@ -66,7 +74,8 @@ jobs:
       - name: Test
         run: swift test
 
-      - name: Create and push verified tag
+      - name: Create or reuse verified tag
+        if: steps.tag.outputs.exists == 'false'
         env:
           COMMIT_SHA: ${{ steps.commit.outputs.sha }}
         shell: bash
@@ -84,6 +93,9 @@ jobs:
         run: |
           set -euo pipefail
           remote_revision="$(git ls-remote --tags origin "refs/tags/$VERSION^{}" | awk '{print $1}')"
+          if [[ -z "$remote_revision" ]]; then
+            remote_revision="$(git ls-remote --tags origin "refs/tags/$VERSION" | awk '{print $1}')"
+          fi
           if [[ "$remote_revision" != "$COMMIT_SHA" ]]; then
             echo "Pushed tag does not point to the verified commit" >&2
             exit 1
@@ -95,15 +107,43 @@ jobs:
           COMMIT_SHA: ${{ steps.commit.outputs.sha }}
         with:
           script: |
-            const release = await github.rest.repos.createRelease({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              tag_name: process.env.VERSION,
-              target_commitish: process.env.COMMIT_SHA,
-              name: process.env.VERSION,
-              body: process.env.RELEASE_NOTES || undefined,
-              generate_release_notes: !process.env.RELEASE_NOTES,
-            });
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            const version = process.env.VERSION;
+            const notes = process.env.RELEASE_NOTES?.trim();
+            let release;
+
+            try {
+              release = await github.rest.repos.getReleaseByTag({
+                owner,
+                repo,
+                tag: version,
+              });
+            } catch (error) {
+              if (error.status !== 404) {
+                throw error;
+              }
+              release = await github.rest.repos.createRelease({
+                owner,
+                repo,
+                tag_name: version,
+                target_commitish: process.env.COMMIT_SHA,
+                name: version,
+                body: notes || undefined,
+                generate_release_notes: !notes,
+              });
+            }
+
+            if (release.data.draft) {
+              release = await github.rest.repos.updateRelease({
+                owner,
+                repo,
+                release_id: release.data.id,
+                name: version,
+                body: notes || release.data.body || "",
+                draft: false,
+              });
+            }
             if (release.data.draft || !release.data.html_url) {
               throw new Error("GitHub Release publication failed");
             }
