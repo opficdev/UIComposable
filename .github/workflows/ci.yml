@@ -13,10 +13,12 @@ permissions:
 jobs:
   build:
     name: Swift Build
-    runs-on: macos-15
+    runs-on: macos-26
+    env:
+      DEVELOPER_DIR: /Applications/Xcode_26.6.app/Contents/Developer
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Build
         shell: bash
@@ -30,7 +32,7 @@ jobs:
 
       - name: Upload build log
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: build-log
           path: build.log
@@ -39,10 +41,19 @@ jobs:
   test:
     name: Swift Test
     needs: build
-    runs-on: macos-15
+    runs-on: macos-26
+    env:
+      DEVELOPER_DIR: /Applications/Xcode_26.6.app/Contents/Developer
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
+
+      - name: Resolve iOS Simulator
+        id: simulator
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "id=$(bash Scripts/resolve-ios-simulator.sh)" >> "$GITHUB_OUTPUT"
 
       - name: Test
         shell: bash
@@ -51,7 +62,7 @@ jobs:
           xcodebuild \
             -scheme UIComposable \
             -sdk iphonesimulator \
-            -destination 'platform=iOS Simulator,name=iPhone 16 Pro' \
+            -destination "id=${{ steps.simulator.outputs.id }}" \
             -derivedDataPath "$RUNNER_TEMP/UIComposableDerivedData" \
             test 2>&1 | tee test.log
 
@@ -64,7 +75,7 @@ jobs:
 
       - name: Upload test log
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: test-log
           path: test.log

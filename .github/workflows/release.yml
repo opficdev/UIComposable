@@ -21,13 +21,14 @@ permissions:
 
 jobs:
   release:
-    runs-on: macos-15
+    runs-on: macos-26
     env:
+      DEVELOPER_DIR: /Applications/Xcode_26.6.app/Contents/Developer
       VERSION: ${{ inputs.version }}
       RELEASE_NOTES: ${{ inputs.release_notes }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           fetch-depth: 0
 
@@ -76,12 +77,19 @@ jobs:
             -destination 'generic/platform=iOS Simulator' \
             build
 
+      - name: Resolve iOS Simulator
+        id: simulator
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "id=$(bash Scripts/resolve-ios-simulator.sh)" >> "$GITHUB_OUTPUT"
+
       - name: Test
         run: |
           xcodebuild \
             -scheme UIComposable \
             -sdk iphonesimulator \
-            -destination 'platform=iOS Simulator,name=iPhone 16 Pro' \
+            -destination "id=${{ steps.simulator.outputs.id }}" \
             -derivedDataPath "$RUNNER_TEMP/UIComposableDerivedData" \
             test
 
