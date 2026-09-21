@@ -9,10 +9,36 @@ enum UIComposableConsumerFixture {
 		}
 	}
 
+	static func sizedBasicView() -> some View {
+		ConsumerView().composable(
+			update: { view in
+				view.backgroundColor = .systemBackground
+			},
+			sizeThatFits: { proposal, view in
+				guard let width = proposal.width else {
+					return nil
+				}
+
+				return view.sizeThatFits(CGSize(width: width, height: .greatestFiniteMagnitude))
+			}
+		)
+	}
+
 	static func basicViewController() -> some View {
 		ConsumerViewController().composable { viewController in
 			viewController.title = "UIComposable"
 		}
+	}
+
+	static func sizedBasicViewController() -> some View {
+		ConsumerViewController().composable(
+			update: { viewController in
+				viewController.title = "UIComposable"
+			},
+			sizeThatFits: { _, viewController in
+				viewController.view.bounds.size
+			}
+		)
 	}
 
 	static func coordinatedView() -> some View {
@@ -21,8 +47,29 @@ enum UIComposableConsumerFixture {
 		}
 	}
 
+	static func sizedCoordinatedView() -> some View {
+		ConsumerTextField().composable(
+			update: { textField in
+				textField.placeholder = "검색어"
+			},
+			sizeThatFits: { proposal, textField in
+				guard let width = proposal.width else {
+					return nil
+				}
+
+				return textField.sizeThatFits(CGSize(width: width, height: .greatestFiniteMagnitude))
+			}
+		)
+	}
+
 	static func coordinatedViewController() -> some View {
 		ConsumerViewControllerWithCoordinator().composable()
+	}
+
+	static func sizedCoordinatedViewController() -> some View {
+		ConsumerViewControllerWithCoordinator().composable(sizeThatFits: { _, viewController in
+			viewController.view.bounds.size
+		})
 	}
 }
 
