@@ -98,6 +98,36 @@ func UIViewControllerBridge가_실제_UIViewController에_update를_적용한다
     #expect(candidate.title == nil)
 }
 
+@Test("CoordinatedUIViewControllerBridge가_Coordinator_lifecycle을_실제_UIViewController에_적용한다")
+@MainActor
+func coordinatedUIViewControllerBridge가_Coordinator_lifecycle을_실제_UIViewController에_적용한다() {
+    let events = CoordinatorLifecycleEvents()
+    let displayed = UICoordinatedViewController(events: events)
+    let bridge = CoordinatedUIViewControllerBridge(content: displayed) { target in
+        events.values.append("initial update")
+        target.title = "initial"
+    }
+    let coordinator = bridge.makeCoordinator()
+    let made = bridge.makeContent(coordinator: coordinator)
+    let candidate = UICoordinatedViewController(events: events)
+    let updatedBridge = CoordinatedUIViewControllerBridge(content: candidate) { target in
+        events.values.append("updated update")
+        target.title = "updated"
+    }
+
+    updatedBridge.updateContent(displayed, coordinator: coordinator)
+    CoordinatedUIViewControllerBridge<UICoordinatedViewController>.dismantleUIViewController(displayed, coordinator: coordinator)
+
+    #expect(displayed === made)
+    #expect(displayed.title == "updated")
+    #expect(candidate.title == nil)
+    #expect(displayed.makeCoordinatorCallCount == 1)
+    #expect(coordinator.connectedContent === displayed)
+    #expect(coordinator.updatedContent === displayed)
+    #expect(coordinator.disconnectedContent === displayed)
+    #expect(events.values == ["connect", "initial update", "coordinator update", "updated update", "coordinator update", "disconnect"])
+}
+
 @MainActor
 private final class UIComposableView: UIView, UIComposable {}
 
@@ -118,6 +148,48 @@ private final class UICoordinatedView: UIView, UICoordinatedComposable {
     init(events: CoordinatorLifecycleEvents) {
         self.events = events
         super.init(frame: .zero)
+    }
+
+    @available(*, unavailable)
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+
+    func makeCoordinator() -> Coordinator {
+        makeCoordinatorCallCount += 1
+        return Coordinator()
+    }
+
+    func connect(coordinator: Coordinator) {
+        events.values.append("connect")
+        coordinator.connectedContent = self
+    }
+
+    func update(coordinator: Coordinator) {
+        events.values.append("coordinator update")
+        coordinator.updatedContent = self
+    }
+
+    func disconnect(coordinator: Coordinator) {
+        events.values.append("disconnect")
+        coordinator.disconnectedContent = self
+    }
+}
+
+@MainActor
+private final class UICoordinatedViewController: UIViewController, UICoordinatedComposable {
+    final class Coordinator {
+        weak var connectedContent: UICoordinatedViewController?
+        weak var updatedContent: UICoordinatedViewController?
+        weak var disconnectedContent: UICoordinatedViewController?
+    }
+
+    let events: CoordinatorLifecycleEvents
+    private(set) var makeCoordinatorCallCount = 0
+
+    init(events: CoordinatorLifecycleEvents) {
+        self.events = events
+        super.init(nibName: nil, bundle: nil)
     }
 
     @available(*, unavailable)
