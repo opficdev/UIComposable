@@ -4,6 +4,12 @@ import UIComposable
 @MainActor
 enum UIComposableConsumerFixture {
 	static func basicView() -> some View {
+		ConsumerView().composable { view in
+			view.backgroundColor = .systemBackground
+		}
+	}
+
+	static func sizedBasicView() -> some View {
 		ConsumerView().composable(
 			update: { view in
 				view.backgroundColor = .systemBackground
@@ -19,6 +25,12 @@ enum UIComposableConsumerFixture {
 	}
 
 	static func basicViewController() -> some View {
+		ConsumerViewController().composable { viewController in
+			viewController.title = "UIComposable"
+		}
+	}
+
+	static func sizedBasicViewController() -> some View {
 		ConsumerViewController().composable(
 			update: { viewController in
 				viewController.title = "UIComposable"
@@ -30,6 +42,12 @@ enum UIComposableConsumerFixture {
 	}
 
 	static func coordinatedView() -> some View {
+		ConsumerTextField().composable { textField in
+			textField.placeholder = "검색어"
+		}
+	}
+
+	static func sizedCoordinatedView() -> some View {
 		ConsumerTextField().composable(
 			update: { textField in
 				textField.placeholder = "검색어"
@@ -45,6 +63,10 @@ enum UIComposableConsumerFixture {
 	}
 
 	static func coordinatedViewController() -> some View {
+		ConsumerViewControllerWithCoordinator().composable()
+	}
+
+	static func sizedCoordinatedViewController() -> some View {
 		ConsumerViewControllerWithCoordinator().composable(sizeThatFits: { _, viewController in
 			viewController.view.bounds.size
 		})

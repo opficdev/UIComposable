@@ -64,6 +64,21 @@ func UIViewBridge가_sizing_미지정_시_nil을_반환한다() {
     #expect(bridge.sizeContent(ProposedViewSize(width: 120, height: nil), content: view) == nil)
 }
 
+@Test("SwiftUI가_UIViewBridge의_sizeThatFits_hook을_호출한다")
+@MainActor
+func SwiftUI가_UIViewBridge의_sizeThatFits_hook을_호출한다() {
+    let view = UIComposableView()
+    var received: UIComposableView?
+    let bridge = UIViewBridge(content: view, update: { _ in }, sizing: { _, view in
+        received = view
+        return CGSize(width: 120, height: 80)
+    })
+
+    measure(bridge)
+
+    #expect(received === view)
+}
+
 @Test("CoordinatedUIViewBridge가_Coordinator_lifecycle을_실제_UIView에_적용한다")
 @MainActor
 func coordinatedUIViewBridge가_Coordinator_lifecycle을_실제_UIView에_적용한다() {
@@ -122,6 +137,22 @@ func coordinatedUIViewBridge가_sizing_미지정_시_nil을_반환한다() {
 
     #expect(bridge.sizeContent(ProposedViewSize(width: 120, height: nil), content: view) == nil)
     #expect(events.values.isEmpty)
+}
+
+@Test("SwiftUI가_CoordinatedUIViewBridge의_sizeThatFits_hook을_호출한다")
+@MainActor
+func SwiftUI가_CoordinatedUIViewBridge의_sizeThatFits_hook을_호출한다() {
+    let events = CoordinatorLifecycleEvents()
+    let view = UICoordinatedView(events: events)
+    var received: UICoordinatedView?
+    let bridge = CoordinatedUIViewBridge(content: view, update: { _ in }, sizing: { _, view in
+        received = view
+        return CGSize(width: 120, height: 80)
+    })
+
+    measure(bridge)
+
+    #expect(received === view)
 }
 
 @Test("UICoordinatedComposable_UIView가_Coordinator_Bridge를_선택한다")
@@ -205,6 +236,21 @@ func UIViewControllerBridge가_sizing_미지정_시_nil을_반환한다() {
     #expect(bridge.sizeContent(ProposedViewSize(width: 120, height: nil), content: viewController) == nil)
 }
 
+@Test("SwiftUI가_UIViewControllerBridge의_sizeThatFits_hook을_호출한다")
+@MainActor
+func SwiftUI가_UIViewControllerBridge의_sizeThatFits_hook을_호출한다() {
+    let viewController = UIComposableViewController()
+    var received: UIComposableViewController?
+    let bridge = UIViewControllerBridge(content: viewController, update: { _ in }, sizing: { _, viewController in
+        received = viewController
+        return CGSize(width: 120, height: 80)
+    })
+
+    measure(bridge)
+
+    #expect(received === viewController)
+}
+
 @Test("CoordinatedUIViewControllerBridge가_Coordinator_lifecycle을_실제_UIViewController에_적용한다")
 @MainActor
 func coordinatedUIViewControllerBridge가_Coordinator_lifecycle을_실제_UIViewController에_적용한다() {
@@ -265,6 +311,32 @@ func coordinatedUIViewControllerBridge가_sizing_미지정_시_nil을_반환한�
     #expect(events.values.isEmpty)
 }
 
+@Test("SwiftUI가_CoordinatedUIViewControllerBridge의_sizeThatFits_hook을_호출한다")
+@MainActor
+func SwiftUI가_CoordinatedUIViewControllerBridge의_sizeThatFits_hook을_호출한다() {
+    let events = CoordinatorLifecycleEvents()
+    let viewController = UICoordinatedViewController(events: events)
+    var received: UICoordinatedViewController?
+    let bridge = CoordinatedUIViewControllerBridge(content: viewController, update: { _ in }, sizing: { _, viewController in
+        received = viewController
+        return CGSize(width: 120, height: 80)
+    })
+
+    measure(bridge)
+
+    #expect(received === viewController)
+}
+
+@Test("UICoordinatedComposable이_sizeThatFits_composable에서_Coordinator_Bridge를_선택한다")
+@MainActor
+func UICoordinatedComposable이_sizeThatFits_composable에서_Coordinator_Bridge를_선택한다() {
+    let view = UICoordinatedView(events: CoordinatorLifecycleEvents()).composable(sizeThatFits: { _, _ in nil })
+    let viewController = UICoordinatedViewController(events: CoordinatorLifecycleEvents()).composable(sizeThatFits: { _, _ in nil })
+
+    #expect(view is CoordinatedUIViewBridge<UICoordinatedView>)
+    #expect(viewController is CoordinatedUIViewControllerBridge<UICoordinatedViewController>)
+}
+
 @Test("UICoordinatedComposable_UIViewController가_Coordinator_Bridge를_선택한다")
 @MainActor
 func UICoordinatedComposable_UIViewController가_Coordinator_Bridge를_선택한다() {
@@ -303,6 +375,13 @@ private func basicUIViewControllerComposable<Content>(_ content: Content) -> som
 private func coordinatedUIViewControllerComposable<Content>(_ content: Content) -> some View
 where Content: UIViewController & UICoordinatedComposable {
     content.composable()
+}
+
+@MainActor
+private func measure<Content>(_ content: Content) where Content: View {
+    let host = UIHostingController(rootView: content)
+    host.loadViewIfNeeded()
+    _ = host.sizeThatFits(in: CGSize(width: 120, height: CGFloat.greatestFiniteMagnitude))
 }
 
 @MainActor
