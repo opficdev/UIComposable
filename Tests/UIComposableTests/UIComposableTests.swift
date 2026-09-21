@@ -32,18 +32,17 @@ func UIViewBridge가_실제_UIView에_update를_적용한다() async {
             recorder: recorder
         )
     )
-    _ = host.view
+    let window = UIWindow(frame: UIScreen.main.bounds)
+    window.rootViewController = host
+    window.makeKeyAndVisible()
 
-    await withTaskCancellationHandler {
-        await withCheckedContinuation { continuation in
-            recorder.begin(continuation)
-            state.usesCandidate = true
-        }
-    } onCancel: {
-        Task { @MainActor in
-            recorder.cancel()
-        }
+    defer {
+        window.isHidden = true
     }
+
+    await recorder.waitForInitialUpdate()
+    state.usesCandidate = true
+    await recorder.waitForUpdatedContent()
 
     #expect(displayed.tag == 2)
     #expect(candidate.tag == 0)
@@ -78,18 +77,17 @@ func UIViewControllerBridge가_실제_UIViewController에_update를_적용한다
             recorder: recorder
         )
     )
-    _ = host.view
+    let window = UIWindow(frame: UIScreen.main.bounds)
+    window.rootViewController = host
+    window.makeKeyAndVisible()
 
-    await withTaskCancellationHandler {
-        await withCheckedContinuation { continuation in
-            recorder.begin(continuation)
-            state.usesCandidate = true
-        }
-    } onCancel: {
-        Task { @MainActor in
-            recorder.cancel()
-        }
+    defer {
+        window.isHidden = true
     }
+
+    await recorder.waitForInitialUpdate()
+    state.usesCandidate = true
+    await recorder.waitForUpdatedContent()
 
     #expect(displayed.title == "updated")
     #expect(candidate.title == nil)
@@ -109,29 +107,60 @@ private final class UIComposableUpdateState {
 
 @MainActor
 private final class UIComposableUpdateRecorder {
-    var continuation: CheckedContinuation<Void, Never>?
-    var isCancelled = false
+    var initialContinuation: CheckedContinuation<Void, Never>?
+    var updatedContentContinuation: CheckedContinuation<Void, Never>?
+    var didReceiveInitialUpdate = false
+    var didReceiveUpdatedContent = false
 
-    func begin(_ continuation: CheckedContinuation<Void, Never>) {
-        self.continuation = continuation
-
-        if isCancelled {
-            resume()
+    func waitForInitialUpdate() async {
+        await withTaskCancellationHandler {
+            await withCheckedContinuation { continuation in
+                if didReceiveInitialUpdate {
+                    continuation.resume()
+                } else {
+                    initialContinuation = continuation
+                }
+            }
+        } onCancel: {
+            Task { @MainActor in
+                cancel()
+            }
         }
     }
 
-    func confirm() {
-        resume()
+    func waitForUpdatedContent() async {
+        await withTaskCancellationHandler {
+            await withCheckedContinuation { continuation in
+                if didReceiveUpdatedContent {
+                    continuation.resume()
+                } else {
+                    updatedContentContinuation = continuation
+                }
+            }
+        } onCancel: {
+            Task { @MainActor in
+                cancel()
+            }
+        }
+    }
+
+    func confirmInitialUpdate() {
+        didReceiveInitialUpdate = true
+        initialContinuation?.resume()
+        initialContinuation = nil
+    }
+
+    func confirmUpdatedContent() {
+        didReceiveUpdatedContent = true
+        updatedContentContinuation?.resume()
+        updatedContentContinuation = nil
     }
 
     func cancel() {
-        isCancelled = true
-        resume()
-    }
-
-    private func resume() {
-        continuation?.resume()
-        continuation = nil
+        initialContinuation?.resume()
+        initialContinuation = nil
+        updatedContentContinuation?.resume()
+        updatedContentContinuation = nil
     }
 }
 
@@ -148,8 +177,12 @@ private struct UIViewUpdateHost: View {
         content.composable { target in
             target.tag = state.usesCandidate ? 2 : 1
 
-            if state.usesCandidate && target === displayed {
-                recorder.confirm()
+            if target === displayed {
+                if state.usesCandidate {
+                    recorder.confirmUpdatedContent()
+                } else {
+                    recorder.confirmInitialUpdate()
+                }
             }
         }
     }
@@ -168,8 +201,12 @@ private struct UIViewControllerUpdateHost: View {
         content.composable { target in
             target.title = state.usesCandidate ? "updated" : "initial"
 
-            if state.usesCandidate && target === displayed {
-                recorder.confirm()
+            if target === displayed {
+                if state.usesCandidate {
+                    recorder.confirmUpdatedContent()
+                } else {
+                    recorder.confirmInitialUpdate()
+                }
             }
         }
     }
