@@ -55,7 +55,6 @@ dependencies: [
 
 ```swift
 import SwiftUI
-import UIKit
 import UIComposable
 
 @MainActor
@@ -79,7 +78,6 @@ Delegate처럼 별도 객체가 필요한 UIKit 컴포넌트는 `UICoordinatedCo
 
 ```swift
 import SwiftUI
-import UIKit
 import UIComposable
 
 @MainActor
