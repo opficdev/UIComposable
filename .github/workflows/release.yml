@@ -129,6 +129,7 @@ jobs:
           fi
 
       - name: Create or reuse GitHub Release draft
+        id: release_draft
         uses: actions/github-script@v7
         env:
           COMMIT_SHA: ${{ steps.commit.outputs.sha }}
@@ -138,19 +139,13 @@ jobs:
             const repo = context.repo.repo;
             const version = process.env.VERSION;
             const notes = process.env.RELEASE_NOTES?.trim();
-            let release;
-
-            try {
-              release = await github.rest.repos.getReleaseByTag({
-                owner,
-                repo,
-                tag: version,
-              });
-            } catch (error) {
-              if (error.status !== 404) {
-                throw error;
-              }
-              release = await github.rest.repos.createRelease({
+            const releases = await github.paginate(github.rest.repos.listReleases, {
+              owner,
+              repo,
+              per_page: 100,
+            });
+            const existingRelease = releases.find((candidate) => candidate.tag_name === version);
+            const release = existingRelease ?? (await github.rest.repos.createRelease({
                 owner,
                 repo,
                 tag_name: version,
@@ -159,13 +154,12 @@ jobs:
                 body: notes || undefined,
                 draft: true,
                 generate_release_notes: !notes,
-              });
-            }
+              })).data;
 
-            if (release.data.tag_name !== version) {
+            if (release.tag_name !== version) {
               throw new Error("GitHub Release tag does not match the requested version");
             }
-            core.setOutput("release_id", release.data.id);
+            core.setOutput("release_id", release.id);
 
       - name: Verify remote consumer by version
         env:
@@ -178,28 +172,24 @@ jobs:
 
       - name: Publish GitHub Release
         uses: actions/github-script@v7
+        env:
+          RELEASE_ID: ${{ steps.release_draft.outputs.release_id }}
         with:
           script: |
             const owner = context.repo.owner;
             const repo = context.repo.repo;
             const version = process.env.VERSION;
-            const notes = process.env.RELEASE_NOTES?.trim();
-            let release = await github.rest.repos.getReleaseByTag({
+            const releaseID = Number(process.env.RELEASE_ID);
+            if (!Number.isInteger(releaseID)) {
+              throw new Error("GitHub Release identifier is unavailable");
+            }
+
+            const release = await github.rest.repos.updateRelease({
               owner,
               repo,
-              tag: version,
+              release_id: releaseID,
+              draft: false,
             });
-
-            if (release.data.draft) {
-              release = await github.rest.repos.updateRelease({
-                owner,
-                repo,
-                release_id: release.data.id,
-                name: version,
-                body: notes || release.data.body || "",
-                draft: false,
-              });
-            }
             if (release.data.tag_name !== version || release.data.draft || !release.data.html_url) {
               throw new Error("GitHub Release publication failed");
             }
