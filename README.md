@@ -1,7 +1,7 @@
 <h1 align="center">UIComposable</h1>
 
 <p align="center">
-  UIKit 인스턴스를 SwiftUI의 `.composable(update:)`로 표시해요.
+  UIKit 인스턴스를 SwiftUI의 .composable(update:)로 표시해요.
 </p>
 
 <p align="center">
@@ -22,7 +22,7 @@ iOS 17 이상과 Swift 6 이상이 필요해요.
 
 UIComposable은 Swift Package Manager에서 `0.1.0`부터 설치해요. `0.x.y`에서는 minor version이 호환성을 보장하지 않으므로 새 기능을 자동으로 받으려면 `Up to Next Minor Version`을 선택해요.
 
-Xcode에서는 **File > Add Package Dependencies...**를 선택하고 아래 URL을 입력해요. Dependency Rule은 **Up to Next Minor Version**, 버전은 `0.1.0`으로 설정해요.
+Xcode에서는 File > Add Package Dependencies...를 선택하고 아래 URL을 입력해요. Dependency Rule은 Up to Next Minor Version, 버전은 `0.1.0`으로 설정해요.
 
 ```
 https://github.com/opficdev/UIComposable.git
