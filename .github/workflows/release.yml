@@ -82,7 +82,16 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          echo "id=$(bash Scripts/resolve-ios-simulator.sh)" >> "$GITHUB_OUTPUT"
+          set +e
+          bash Scripts/resolve-ios-simulator.sh > simulator.log 2>&1
+          status=$?
+          set -e
+          cat simulator.log
+          if [ "$status" -ne 0 ]; then
+            exit "$status"
+          fi
+          simulator_id="$(tail -n 1 simulator.log)"
+          echo "id=$simulator_id" >> "$GITHUB_OUTPUT"
 
       - name: Test
         run: |
