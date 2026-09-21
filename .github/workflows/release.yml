@@ -69,10 +69,28 @@ jobs:
           echo "exists=true" >> "$GITHUB_OUTPUT"
 
       - name: Build
-        run: swift build
+        run: |
+          xcodebuild \
+            -scheme UIComposable \
+            -sdk iphonesimulator \
+            -destination 'generic/platform=iOS Simulator' \
+            build
 
       - name: Test
-        run: swift test
+        run: |
+          xcodebuild \
+            -scheme UIComposable \
+            -sdk iphonesimulator \
+            -destination 'platform=iOS Simulator,name=iPhone 16 Pro' \
+            -derivedDataPath "$RUNNER_TEMP/UIComposableDerivedData" \
+            test
+
+      - name: Verify compile-fail contracts
+        shell: bash
+        run: |
+          set -euo pipefail
+          bash Scripts/verify-compile-fail-contracts.sh \
+            "$RUNNER_TEMP/UIComposableDerivedData/Build/Products/Debug-iphonesimulator"
 
       - name: Create or reuse verified tag
         if: steps.tag.outputs.exists == 'false'
