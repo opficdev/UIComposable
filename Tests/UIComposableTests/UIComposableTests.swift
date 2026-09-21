@@ -65,6 +65,25 @@ func coordinatedUIViewBridge가_Coordinator_lifecycle을_실제_UIView에_적용
     #expect(events.values == ["connect", "initial update", "coordinator update", "updated update", "coordinator update", "disconnect"])
 }
 
+@Test("UICoordinatedComposable_UIView가_Coordinator_Bridge를_선택한다")
+@MainActor
+func UICoordinatedComposable_UIView가_Coordinator_Bridge를_선택한다() {
+    let composable = UICoordinatedView(events: CoordinatorLifecycleEvents()).composable()
+
+    #expect(composable is CoordinatedUIViewBridge<UICoordinatedView>)
+}
+
+@Test("UIView_제네릭_제약이_composable_Bridge를_선택한다")
+@MainActor
+func UIView_제네릭_제약이_composable_Bridge를_선택한다() {
+    let content = UICoordinatedView(events: CoordinatorLifecycleEvents())
+    let basicComposable = basicUIViewComposable(content)
+    let coordinatedComposable = coordinatedUIViewComposable(content)
+
+    #expect(basicComposable is UIViewBridge<UICoordinatedView>)
+    #expect(coordinatedComposable is CoordinatedUIViewBridge<UICoordinatedView>)
+}
+
 @Test("UIViewControllerBridge가_최초_UIViewController에_update를_적용한다")
 @MainActor
 func UIViewControllerBridge가_최초_UIViewController에_update를_적용한다() {
@@ -126,6 +145,46 @@ func coordinatedUIViewControllerBridge가_Coordinator_lifecycle을_실제_UIView
     #expect(coordinator.updatedContent === displayed)
     #expect(coordinator.disconnectedContent === displayed)
     #expect(events.values == ["connect", "initial update", "coordinator update", "updated update", "coordinator update", "disconnect"])
+}
+
+@Test("UICoordinatedComposable_UIViewController가_Coordinator_Bridge를_선택한다")
+@MainActor
+func UICoordinatedComposable_UIViewController가_Coordinator_Bridge를_선택한다() {
+    let composable = UICoordinatedViewController(events: CoordinatorLifecycleEvents()).composable()
+
+    #expect(composable is CoordinatedUIViewControllerBridge<UICoordinatedViewController>)
+}
+
+@Test("UIViewController_제네릭_제약이_composable_Bridge를_선택한다")
+@MainActor
+func UIViewController_제네릭_제약이_composable_Bridge를_선택한다() {
+    let content = UICoordinatedViewController(events: CoordinatorLifecycleEvents())
+    let basicComposable = basicUIViewControllerComposable(content)
+    let coordinatedComposable = coordinatedUIViewControllerComposable(content)
+
+    #expect(basicComposable is UIViewControllerBridge<UICoordinatedViewController>)
+    #expect(coordinatedComposable is CoordinatedUIViewControllerBridge<UICoordinatedViewController>)
+}
+
+@MainActor
+private func basicUIViewComposable<Content>(_ content: Content) -> some View where Content: UIView & UIComposable {
+    content.composable()
+}
+
+@MainActor
+private func coordinatedUIViewComposable<Content>(_ content: Content) -> some View where Content: UIView & UICoordinatedComposable {
+    content.composable()
+}
+
+@MainActor
+private func basicUIViewControllerComposable<Content>(_ content: Content) -> some View where Content: UIViewController & UIComposable {
+    content.composable()
+}
+
+@MainActor
+private func coordinatedUIViewControllerComposable<Content>(_ content: Content) -> some View
+where Content: UIViewController & UICoordinatedComposable {
+    content.composable()
 }
 
 @MainActor
