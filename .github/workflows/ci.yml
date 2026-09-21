@@ -18,14 +18,15 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Swift Version
-        run: swift --version
-
       - name: Build
         shell: bash
         run: |
           set -o pipefail
-          swift build 2>&1 | tee build.log
+          xcodebuild \
+            -scheme UIComposable \
+            -sdk iphonesimulator \
+            -destination 'generic/platform=iOS Simulator' \
+            build 2>&1 | tee build.log
 
       - name: Upload build log
         if: always()
@@ -43,14 +44,28 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Swift Version
-        run: swift --version
-
       - name: Test
         shell: bash
         run: |
           set -o pipefail
-          swift test 2>&1 | tee test.log
+          xcodebuild \
+            -scheme UIComposable \
+            -sdk iphonesimulator \
+            -destination 'platform=iOS Simulator,name=iPhone 16 Pro' \
+            test 2>&1 | tee test.log
+
+      - name: Verify compile-fail contracts
+        shell: bash
+        run: |
+          set -euo pipefail
+          built_products_directory="$(
+            xcodebuild \
+              -scheme UIComposable \
+              -sdk iphonesimulator \
+              -destination 'generic/platform=iOS Simulator' \
+              -showBuildSettings | awk -F ' = ' '/BUILT_PRODUCTS_DIR/ { print $2; exit }'
+          )"
+          bash Scripts/verify-compile-fail-contracts.sh "$built_products_directory"
 
       - name: Upload test log
         if: always()

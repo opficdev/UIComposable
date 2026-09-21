@@ -69,10 +69,33 @@ jobs:
           echo "exists=true" >> "$GITHUB_OUTPUT"
 
       - name: Build
-        run: swift build
+        run: |
+          xcodebuild \
+            -scheme UIComposable \
+            -sdk iphonesimulator \
+            -destination 'generic/platform=iOS Simulator' \
+            build
 
       - name: Test
-        run: swift test
+        run: |
+          xcodebuild \
+            -scheme UIComposable \
+            -sdk iphonesimulator \
+            -destination 'platform=iOS Simulator,name=iPhone 16 Pro' \
+            test
+
+      - name: Verify compile-fail contracts
+        shell: bash
+        run: |
+          set -euo pipefail
+          built_products_directory="$(
+            xcodebuild \
+              -scheme UIComposable \
+              -sdk iphonesimulator \
+              -destination 'generic/platform=iOS Simulator' \
+              -showBuildSettings | awk -F ' = ' '/BUILT_PRODUCTS_DIR/ { print $2; exit }'
+          )"
+          bash Scripts/verify-compile-fail-contracts.sh "$built_products_directory"
 
       - name: Create or reuse verified tag
         if: steps.tag.outputs.exists == 'false'
