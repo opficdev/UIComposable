@@ -7,6 +7,7 @@
 <p align="center">
   <a href="#설치">설치</a>
   <a href="#첫-composable">첫 composable</a>
+  <a href="#크기-계산">크기 계산</a>
   <a href="#coordinator-연결">Coordinator 연결</a>
   <a href="LICENSE">MIT License</a>
 </p>
@@ -71,6 +72,43 @@ struct ProfileView: View {
 ```
 
 `UIComposable`과 `.composable(update:)`는 `@MainActor` API예요. UIKit 인스턴스 생성과 update는 main actor에서 수행해야 해요.
+
+## 크기 계산
+
+`sizeThatFits:`를 지정하면 SwiftUI가 제안한 크기와 실제로 표시 중인 UIKit 인스턴스를 받아 필요한 크기를 반환할 수 있어요. 지정하지 않으면 Bridge는 `nil`을 반환하고 SwiftUI의 기본 크기 계산을 유지해요.
+
+아래 `UITextView` 예제는 제안된 폭으로 높이를 계산해요. 폭이 없으면 `nil`을 반환하므로 SwiftUI가 기본 방식으로 크기를 계산해요.
+
+```swift
+import SwiftUI
+import UIComposable
+
+@MainActor
+final class NoteTextView: UITextView, UIComposable {}
+
+struct NoteView: View {
+	var body: some View {
+		NoteTextView().composable(
+			update: { textView in
+				textView.isScrollEnabled = false
+				textView.text = "SwiftUI가 제안한 폭에 맞춰 높이를 계산합니다."
+			},
+			sizeThatFits: { proposal, textView in
+				guard let width = proposal.width else {
+					return nil
+				}
+
+				let size = textView.sizeThatFits(
+					CGSize(width: width, height: .greatestFiniteMagnitude)
+				)
+				return CGSize(width: width, height: size.height)
+			}
+		)
+	}
+}
+```
+
+`sizeThatFits:`는 SwiftUI의 배치 과정에서 반복 호출될 수 있어요. 크기 계산만 수행하고 상태를 바꾸지 않아야 해요. Coordinator lifecycle과도 별도로 호출돼요.
 
 ## Coordinator 연결
 
