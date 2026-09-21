@@ -9,7 +9,6 @@ Delegate처럼 별도 객체가 필요한 UIKit 컴포넌트는 `UICoordinatedCo
 ```swift
 import SwiftUI
 import UIComposable
-import UIKit
 
 @MainActor
 final class SearchField: UITextField, UICoordinatedComposable {
