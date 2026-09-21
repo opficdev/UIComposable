@@ -18,6 +18,10 @@ let package = Package(
         .testTarget(
             name: "UIComposableTests",
             dependencies: ["UIComposable"]
+        ),
+        .testTarget(
+            name: "UIComposablePublicAPITests",
+            dependencies: ["UIComposable"]
         )
     ]
 )
