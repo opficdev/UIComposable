@@ -13,10 +13,12 @@ permissions:
 jobs:
   build:
     name: Swift Build
-    runs-on: macos-15
+    runs-on: macos-26
+    env:
+      DEVELOPER_DIR: /Applications/Xcode_26.6.app/Contents/Developer
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Build
         shell: bash
@@ -30,7 +32,7 @@ jobs:
 
       - name: Upload build log
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: build-log
           path: build.log
@@ -39,10 +41,28 @@ jobs:
   test:
     name: Swift Test
     needs: build
-    runs-on: macos-15
+    runs-on: macos-26
+    env:
+      DEVELOPER_DIR: /Applications/Xcode_26.6.app/Contents/Developer
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
+
+      - name: Resolve iOS Simulator
+        id: simulator
+        shell: bash
+        run: |
+          set -euo pipefail
+          set +e
+          bash Scripts/resolve-ios-simulator.sh > simulator.log 2>&1
+          status=$?
+          set -e
+          cat simulator.log
+          if [ "$status" -ne 0 ]; then
+            exit "$status"
+          fi
+          simulator_id="$(tail -n 1 simulator.log)"
+          echo "id=$simulator_id" >> "$GITHUB_OUTPUT"
 
       - name: Test
         shell: bash
@@ -51,7 +71,7 @@ jobs:
           xcodebuild \
             -scheme UIComposable \
             -sdk iphonesimulator \
-            -destination 'platform=iOS Simulator,name=iPhone 16 Pro' \
+            -destination "id=${{ steps.simulator.outputs.id }}" \
             -derivedDataPath "$RUNNER_TEMP/UIComposableDerivedData" \
             test 2>&1 | tee test.log
 
@@ -64,8 +84,129 @@ jobs:
 
       - name: Upload test log
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: test-log
-          path: test.log
-          if-no-files-found: error
+          path: |
+            simulator.log
+            test.log
+          if-no-files-found: warn
+
+  report:
+    name: Report CI result
+    needs: [build, test]
+    if: |
+      always()
+      && github.event.pull_request.head.repo.fork == false
+      && (
+        needs.build.result == 'failure'
+        || needs.test.result == 'failure'
+        || (needs.build.result == 'success' && needs.test.result == 'success')
+      )
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
+      pull-requests: write
+    steps:
+      - name: Download CI logs
+        if: needs.build.result == 'failure' || needs.test.result == 'failure'
+        uses: actions/download-artifact@v7
+        continue-on-error: true
+        with:
+          path: ci-artifacts
+
+      - name: Delete resolved CI failure comments
+        if: needs.build.result == 'success' && needs.test.result == 'success'
+        uses: actions/github-script@v8
+        with:
+          script: |
+            const issueNumber = context.payload.pull_request.number;
+            const comments = await github.paginate(github.rest.issues.listComments, {
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: issueNumber,
+              per_page: 100,
+            });
+
+            for (const comment of comments) {
+              if (
+                comment.user?.type === 'Bot'
+                && comment.body?.includes('<!-- uicomposable-ci-failure -->')
+              ) {
+                await github.rest.issues.deleteComment({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  comment_id: comment.id,
+                });
+              }
+            }
+
+      - name: Comment CI failure on PR
+        if: needs.build.result == 'failure' || needs.test.result == 'failure'
+        uses: actions/github-script@v8
+        env:
+          BUILD_RESULT: ${{ needs.build.result }}
+          TEST_RESULT: ${{ needs.test.result }}
+        with:
+          script: |
+            const fs = require('fs');
+            const path = require('path');
+            const marker = '<!-- uicomposable-ci-failure -->';
+
+            function walk(directory) {
+              if (!fs.existsSync(directory)) return [];
+              return fs.readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
+                const fullPath = path.join(directory, entry.name);
+                return entry.isDirectory() ? walk(fullPath) : [fullPath];
+              });
+            }
+
+            const failureLines = walk('ci-artifacts')
+              .filter((filePath) => filePath.endsWith('.log'))
+              .flatMap((filePath) => fs.readFileSync(filePath, 'utf8').split(/\r?\n/))
+              .map((line) => line.replace(/\u001b\[[0-9;]*m/g, '').trim())
+              .filter((line) => /error:|failed|unable to find|no available iOS Simulator/i.test(line))
+              .slice(0, 20);
+
+            const detail = failureLines.length === 0
+              ? '실패 로그 artifact를 찾지 못했습니다. Actions run에서 전체 로그를 확인해주세요.'
+              : `\`\`\`text\n${failureLines.join('\n')}\n\`\`\``;
+            const issueNumber = context.payload.pull_request.number;
+            const body = [
+              marker,
+              '❌ Swift Package CI가 실패했습니다.',
+              '',
+              `- Build: ${process.env.BUILD_RESULT}`,
+              `- Test: ${process.env.TEST_RESULT}`,
+              `- Run: ${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`,
+              '',
+              '## 실패 내용',
+              '',
+              detail,
+            ].join('\n');
+            const comments = await github.paginate(github.rest.issues.listComments, {
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: issueNumber,
+              per_page: 100,
+            });
+            const existingComment = comments.find((comment) => {
+              return comment.user?.type === 'Bot' && comment.body?.includes(marker);
+            });
+
+            if (existingComment) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: existingComment.id,
+                body,
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: issueNumber,
+                body,
+              });
+            }

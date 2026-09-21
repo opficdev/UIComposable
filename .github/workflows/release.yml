@@ -21,13 +21,14 @@ permissions:
 
 jobs:
   release:
-    runs-on: macos-15
+    runs-on: macos-26
     env:
+      DEVELOPER_DIR: /Applications/Xcode_26.6.app/Contents/Developer
       VERSION: ${{ inputs.version }}
       RELEASE_NOTES: ${{ inputs.release_notes }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           fetch-depth: 0
 
@@ -76,12 +77,28 @@ jobs:
             -destination 'generic/platform=iOS Simulator' \
             build
 
+      - name: Resolve iOS Simulator
+        id: simulator
+        shell: bash
+        run: |
+          set -euo pipefail
+          set +e
+          bash Scripts/resolve-ios-simulator.sh > simulator.log 2>&1
+          status=$?
+          set -e
+          cat simulator.log
+          if [ "$status" -ne 0 ]; then
+            exit "$status"
+          fi
+          simulator_id="$(tail -n 1 simulator.log)"
+          echo "id=$simulator_id" >> "$GITHUB_OUTPUT"
+
       - name: Test
         run: |
           xcodebuild \
             -scheme UIComposable \
             -sdk iphonesimulator \
-            -destination 'platform=iOS Simulator,name=iPhone 16 Pro' \
+            -destination "id=${{ steps.simulator.outputs.id }}" \
             -derivedDataPath "$RUNNER_TEMP/UIComposableDerivedData" \
             test
 
@@ -91,6 +108,15 @@ jobs:
           set -euo pipefail
           bash Scripts/verify-compile-fail-contracts.sh \
             "$RUNNER_TEMP/UIComposableDerivedData/Build/Products/Debug-iphonesimulator"
+
+      - name: Verify remote consumer by revision
+        env:
+          COMMIT_SHA: ${{ steps.commit.outputs.sha }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          bash Scripts/verify-uicomposable-consumer.sh \
+            revision "$COMMIT_SHA" "$COMMIT_SHA"
 
       - name: Create or reuse verified tag
         if: steps.tag.outputs.exists == 'false'
@@ -119,7 +145,8 @@ jobs:
             exit 1
           fi
 
-      - name: Create GitHub Release
+      - name: Create or reuse GitHub Release draft
+        id: release_draft
         uses: actions/github-script@v7
         env:
           COMMIT_SHA: ${{ steps.commit.outputs.sha }}
@@ -129,39 +156,57 @@ jobs:
             const repo = context.repo.repo;
             const version = process.env.VERSION;
             const notes = process.env.RELEASE_NOTES?.trim();
-            let release;
-
-            try {
-              release = await github.rest.repos.getReleaseByTag({
-                owner,
-                repo,
-                tag: version,
-              });
-            } catch (error) {
-              if (error.status !== 404) {
-                throw error;
-              }
-              release = await github.rest.repos.createRelease({
+            const releases = await github.paginate(github.rest.repos.listReleases, {
+              owner,
+              repo,
+              per_page: 100,
+            });
+            const existingRelease = releases.find((candidate) => candidate.tag_name === version);
+            const release = existingRelease ?? (await github.rest.repos.createRelease({
                 owner,
                 repo,
                 tag_name: version,
                 target_commitish: process.env.COMMIT_SHA,
                 name: version,
                 body: notes || undefined,
+                draft: true,
                 generate_release_notes: !notes,
-              });
+              })).data;
+
+            if (release.tag_name !== version) {
+              throw new Error("GitHub Release tag does not match the requested version");
+            }
+            core.setOutput("release_id", release.id);
+
+      - name: Verify remote consumer by version
+        env:
+          COMMIT_SHA: ${{ steps.commit.outputs.sha }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          bash Scripts/verify-uicomposable-consumer.sh \
+            exact "$VERSION" "$COMMIT_SHA"
+
+      - name: Publish GitHub Release
+        uses: actions/github-script@v7
+        env:
+          RELEASE_ID: ${{ steps.release_draft.outputs.release_id }}
+        with:
+          script: |
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            const version = process.env.VERSION;
+            const releaseID = Number(process.env.RELEASE_ID);
+            if (!Number.isInteger(releaseID)) {
+              throw new Error("GitHub Release identifier is unavailable");
             }
 
-            if (release.data.draft) {
-              release = await github.rest.repos.updateRelease({
-                owner,
-                repo,
-                release_id: release.data.id,
-                name: version,
-                body: notes || release.data.body || "",
-                draft: false,
-              });
-            }
-            if (release.data.draft || !release.data.html_url) {
+            const release = await github.rest.repos.updateRelease({
+              owner,
+              repo,
+              release_id: releaseID,
+              draft: false,
+            });
+            if (release.data.tag_name !== version || release.data.draft || !release.data.html_url) {
               throw new Error("GitHub Release publication failed");
             }
