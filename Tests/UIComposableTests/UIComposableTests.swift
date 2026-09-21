@@ -35,6 +35,36 @@ func UIViewBridge가_실제_UIView에_update를_적용한다() {
     #expect(candidate.tag == 0)
 }
 
+@Test("CoordinatedUIViewBridge가_Coordinator_lifecycle을_실제_UIView에_적용한다")
+@MainActor
+func coordinatedUIViewBridge가_Coordinator_lifecycle을_실제_UIView에_적용한다() {
+    let events = CoordinatorLifecycleEvents()
+    let displayed = UICoordinatedView(events: events)
+    let bridge = CoordinatedUIViewBridge(content: displayed) { target in
+        events.values.append("initial update")
+        target.tag = 1
+    }
+    let coordinator = bridge.makeCoordinator()
+    let made = bridge.makeContent(coordinator: coordinator)
+    let candidate = UICoordinatedView(events: events)
+    let updatedBridge = CoordinatedUIViewBridge(content: candidate) { target in
+        events.values.append("updated update")
+        target.tag = 2
+    }
+
+    updatedBridge.updateContent(displayed, coordinator: coordinator)
+    CoordinatedUIViewBridge<UICoordinatedView>.dismantleUIView(displayed, coordinator: coordinator)
+
+    #expect(displayed === made)
+    #expect(displayed.tag == 2)
+    #expect(candidate.tag == 0)
+    #expect(displayed.makeCoordinatorCallCount == 1)
+    #expect(coordinator.connectedContent === displayed)
+    #expect(coordinator.updatedContent === displayed)
+    #expect(coordinator.disconnectedContent === displayed)
+    #expect(events.values == ["connect", "initial update", "coordinator update", "updated update", "coordinator update", "disconnect"])
+}
+
 @Test("UIViewControllerBridge가_최초_UIViewController에_update를_적용한다")
 @MainActor
 func UIViewControllerBridge가_최초_UIViewController에_update를_적용한다() {
@@ -73,3 +103,50 @@ private final class UIComposableView: UIView, UIComposable {}
 
 @MainActor
 private final class UIComposableViewController: UIViewController, UIComposable {}
+
+@MainActor
+private final class UICoordinatedView: UIView, UICoordinatedComposable {
+    final class Coordinator {
+        weak var connectedContent: UICoordinatedView?
+        weak var updatedContent: UICoordinatedView?
+        weak var disconnectedContent: UICoordinatedView?
+    }
+
+    let events: CoordinatorLifecycleEvents
+    private(set) var makeCoordinatorCallCount = 0
+
+    init(events: CoordinatorLifecycleEvents) {
+        self.events = events
+        super.init(frame: .zero)
+    }
+
+    @available(*, unavailable)
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+
+    func makeCoordinator() -> Coordinator {
+        makeCoordinatorCallCount += 1
+        return Coordinator()
+    }
+
+    func connect(coordinator: Coordinator) {
+        events.values.append("connect")
+        coordinator.connectedContent = self
+    }
+
+    func update(coordinator: Coordinator) {
+        events.values.append("coordinator update")
+        coordinator.updatedContent = self
+    }
+
+    func disconnect(coordinator: Coordinator) {
+        events.values.append("disconnect")
+        coordinator.disconnectedContent = self
+    }
+}
+
+@MainActor
+private final class CoordinatorLifecycleEvents {
+    var values: [String] = []
+}
