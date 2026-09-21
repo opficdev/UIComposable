@@ -52,20 +52,15 @@ jobs:
             -scheme UIComposable \
             -sdk iphonesimulator \
             -destination 'platform=iOS Simulator,name=iPhone 16 Pro' \
+            -derivedDataPath "$RUNNER_TEMP/UIComposableDerivedData" \
             test 2>&1 | tee test.log
 
       - name: Verify compile-fail contracts
         shell: bash
         run: |
           set -euo pipefail
-          built_products_directory="$(
-            xcodebuild \
-              -scheme UIComposable \
-              -sdk iphonesimulator \
-              -destination 'generic/platform=iOS Simulator' \
-              -showBuildSettings | awk -F ' = ' '/BUILT_PRODUCTS_DIR/ { print $2; exit }'
-          )"
-          bash Scripts/verify-compile-fail-contracts.sh "$built_products_directory"
+          bash Scripts/verify-compile-fail-contracts.sh \
+            "$RUNNER_TEMP/UIComposableDerivedData/Build/Products/Debug-iphonesimulator"
 
       - name: Upload test log
         if: always()
