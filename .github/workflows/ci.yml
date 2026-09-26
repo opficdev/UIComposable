@@ -30,12 +30,27 @@ jobs:
             -destination 'generic/platform=iOS Simulator' \
             build 2>&1 | tee build.log
 
+      - name: Build ExampleApp
+        shell: bash
+        run: |
+          set -o pipefail
+          xcodebuild \
+            -project Examples/ExampleApp/ExampleApp.xcodeproj \
+            -scheme ExampleApp \
+            -sdk iphonesimulator \
+            -destination 'generic/platform=iOS Simulator' \
+            -derivedDataPath "$RUNNER_TEMP/ExampleAppDerivedData" \
+            CODE_SIGNING_ALLOWED=NO \
+            build 2>&1 | tee example-app-build.log
+
       - name: Upload build log
         if: always()
         uses: actions/upload-artifact@v7
         with:
           name: build-log
-          path: build.log
+          path: |
+            build.log
+            example-app-build.log
           if-no-files-found: error
 
   test:
