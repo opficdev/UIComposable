@@ -7,23 +7,25 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		B1000000000000000000003F /* DemoRegion.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000000000000000000002F /* DemoRegion.swift */; };
 		B10000000000000000000030 /* ExampleApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000020 /* ExampleApp.swift */; };
 		B10000000000000000000031 /* ExampleIndexView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000021 /* ExampleIndexView.swift */; };
 		B10000000000000000000032 /* BasicCollectionViewDemo.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000022 /* BasicCollectionViewDemo.swift */; };
 		B10000000000000000000033 /* DemoCollectionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000023 /* DemoCollectionView.swift */; };
 		B10000000000000000000034 /* CollectionLayoutMetrics.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000024 /* CollectionLayoutMetrics.swift */; };
-		B1000000000000000000003F /* DemoRegion.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000000000000000000002F /* DemoRegion.swift */; };
+		B10000000000000000000035 /* FittingCollectionViewDemo.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000025 /* FittingCollectionViewDemo.swift */; };
 		B10000000000000000000042 /* UIComposable in Frameworks */ = {isa = PBXBuildFile; productRef = B10000000000000000000041 /* UIComposable */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		B1000000000000000000002F /* DemoRegion.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DemoRegion.swift; sourceTree = "<group>"; };
 		B10000000000000000000005 /* ExampleApp.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = ExampleApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		B10000000000000000000020 /* ExampleApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExampleApp.swift; sourceTree = "<group>"; };
 		B10000000000000000000021 /* ExampleIndexView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExampleIndexView.swift; sourceTree = "<group>"; };
 		B10000000000000000000022 /* BasicCollectionViewDemo.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BasicCollectionViewDemo.swift; sourceTree = "<group>"; };
 		B10000000000000000000023 /* DemoCollectionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DemoCollectionView.swift; sourceTree = "<group>"; };
 		B10000000000000000000024 /* CollectionLayoutMetrics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CollectionLayoutMetrics.swift; sourceTree = "<group>"; };
-		B1000000000000000000002F /* DemoRegion.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DemoRegion.swift; sourceTree = "<group>"; };
+		B10000000000000000000025 /* FittingCollectionViewDemo.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FittingCollectionViewDemo.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -70,6 +72,7 @@
 			isa = PBXGroup;
 			children = (
 				B10000000000000000000022 /* BasicCollectionViewDemo.swift */,
+				B10000000000000000000025 /* FittingCollectionViewDemo.swift */,
 			);
 			path = Demos;
 			sourceTree = "<group>";
@@ -166,12 +169,13 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				B1000000000000000000003F /* DemoRegion.swift in Sources */,
 				B10000000000000000000030 /* ExampleApp.swift in Sources */,
 				B10000000000000000000031 /* ExampleIndexView.swift in Sources */,
 				B10000000000000000000032 /* BasicCollectionViewDemo.swift in Sources */,
 				B10000000000000000000033 /* DemoCollectionView.swift in Sources */,
 				B10000000000000000000034 /* CollectionLayoutMetrics.swift in Sources */,
-				B1000000000000000000003F /* DemoRegion.swift in Sources */,
+				B10000000000000000000035 /* FittingCollectionViewDemo.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

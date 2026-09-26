@@ -8,6 +8,9 @@ struct ExampleIndexView: View {
                     NavigationLink("기본 CollectionView") {
                         BasicCollectionViewDemo()
                     }
+                    NavigationLink("크기 계산 CollectionView") {
+                        FittingCollectionViewDemo()
+                    }
                 }
             }
             .navigationTitle("UIComposable 예제")
