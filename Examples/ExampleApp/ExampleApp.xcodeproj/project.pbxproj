@@ -20,6 +20,8 @@
 		B10000000000000000000039 /* BasicCollectionViewControllerDemo.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000029 /* BasicCollectionViewControllerDemo.swift */; };
 		B1000000000000000000003A /* DemoCollectionViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000000000000000000002A /* DemoCollectionViewController.swift */; };
 		B1000000000000000000003B /* FittingCollectionViewControllerDemo.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000000000000000000002B /* FittingCollectionViewControllerDemo.swift */; };
+		B1000000000000000000003C /* CoordinatedCollectionViewControllerDemo.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000000000000000000002C /* CoordinatedCollectionViewControllerDemo.swift */; };
+		B1000000000000000000003D /* CoordinatedDemoCollectionViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000000000000000000002D /* CoordinatedDemoCollectionViewController.swift */; };
 		B10000000000000000000042 /* UIComposable in Frameworks */ = {isa = PBXBuildFile; productRef = B10000000000000000000041 /* UIComposable */; };
 /* End PBXBuildFile section */
 
@@ -38,6 +40,8 @@
 		B10000000000000000000029 /* BasicCollectionViewControllerDemo.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BasicCollectionViewControllerDemo.swift; sourceTree = "<group>"; };
 		B1000000000000000000002A /* DemoCollectionViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DemoCollectionViewController.swift; sourceTree = "<group>"; };
 		B1000000000000000000002B /* FittingCollectionViewControllerDemo.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FittingCollectionViewControllerDemo.swift; sourceTree = "<group>"; };
+		B1000000000000000000002C /* CoordinatedCollectionViewControllerDemo.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoordinatedCollectionViewControllerDemo.swift; sourceTree = "<group>"; };
+		B1000000000000000000002D /* CoordinatedDemoCollectionViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoordinatedDemoCollectionViewController.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -89,6 +93,7 @@
 				B10000000000000000000028 /* FittingCoordinatedCollectionViewDemo.swift */,
 				B10000000000000000000029 /* BasicCollectionViewControllerDemo.swift */,
 				B1000000000000000000002B /* FittingCollectionViewControllerDemo.swift */,
+				B1000000000000000000002C /* CoordinatedCollectionViewControllerDemo.swift */,
 			);
 			path = Demos;
 			sourceTree = "<group>";
@@ -99,6 +104,7 @@
 				B10000000000000000000023 /* DemoCollectionView.swift */,
 				B10000000000000000000027 /* CoordinatedDemoCollectionView.swift */,
 				B1000000000000000000002A /* DemoCollectionViewController.swift */,
+				B1000000000000000000002D /* CoordinatedDemoCollectionViewController.swift */,
 			);
 			path = UIKit;
 			sourceTree = "<group>";
@@ -200,6 +206,8 @@
 				B10000000000000000000039 /* BasicCollectionViewControllerDemo.swift in Sources */,
 				B1000000000000000000003A /* DemoCollectionViewController.swift in Sources */,
 				B1000000000000000000003B /* FittingCollectionViewControllerDemo.swift in Sources */,
+				B1000000000000000000003C /* CoordinatedCollectionViewControllerDemo.swift in Sources */,
+				B1000000000000000000003D /* CoordinatedDemoCollectionViewController.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
