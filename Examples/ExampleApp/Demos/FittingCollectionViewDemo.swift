@@ -21,7 +21,7 @@ struct FittingCollectionViewDemo: View {
                 }
 
                 DemoRegion(.uiKit) {
-                    DemoCollectionView()
+                    DemoCollectionView
                         .composable(
                             update: { collectionView in
                                 collectionView.isScrollEnabled = false

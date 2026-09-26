@@ -23,9 +23,9 @@ private struct UnusedCandidateLifecycleDemo: View {
     var body: some View {
         DemoRegion(.swiftUI) {
             VStack(alignment: .leading, spacing: 12) {
-                Text("1. 미사용 인스턴스의 init 부작용")
+                Text("1. Bridge 소유 지연 생성")
                     .font(.headline)
-                Text("body를 다시 계산할 때 새 UILabel이 만들어지지만 화면에는 처음 객체가 남습니다. 새 객체가 init에서 등록한 Observer는 disconnect 대상이 아닙니다.")
+                Text("body를 다시 계산해도 Bridge 값만 새로 만들어집니다. UILabel과 init에서 등록한 Observer는 SwiftUI identity마다 하나로 유지됩니다.")
                 CandidateHost(revision: revision)
                     .equatable()
                     .frame(height: 56)
@@ -42,12 +42,6 @@ private struct UnusedCandidateLifecycleDemo: View {
                 }
                 .buttonStyle(.bordered)
 
-                Button("남은 Observer 정리") {
-                    InitializerObserverMetrics.shared.stopAllObservers()
-                    refreshAfterUpdate()
-                }
-                .buttonStyle(.bordered)
-
                 LabeledContent("생성된 객체", value: "\(snapshot.createdCount)")
                 LabeledContent("살아 있는 객체", value: "\(snapshot.liveCount)")
                 LabeledContent("표시 중인 객체", value: snapshot.displayedID.map { "#\($0)" } ?? "없음")
@@ -58,9 +52,6 @@ private struct UnusedCandidateLifecycleDemo: View {
         .task {
             await Task.yield()
             refresh()
-        }
-        .onDisappear {
-            InitializerObserverMetrics.shared.stopAllObservers()
         }
     }
 
@@ -80,7 +71,7 @@ private struct CandidateHost: View, Equatable {
     let revision: Int
 
     var body: some View {
-        InitializerObserverLabel()
+        InitializerObserverLabel
             .composable { label in
                 InitializerObserverMetrics.shared.markDisplayed(label.id)
                 label.text = "표시 객체 #\(label.id), 갱신 \(revision)회"
@@ -101,12 +92,12 @@ private struct StaticConstraintLifecycleDemo: View {
                     .font(.headline)
                 Text("두 UIButton은 같은 타입입니다. UIComposable 제약으로 감싼 첫 버튼은 Coordinator가 연결되지 않아 눌러도 횟수가 바뀌지 않습니다.")
 
-                basicComposable(LifecycleActionButton()) {
+                basicComposable(LifecycleActionButton.self) {
                     basicTapCount += 1
                 }
                 .frame(height: 44)
 
-                coordinatedComposable(LifecycleActionButton()) {
+                coordinatedComposable(LifecycleActionButton.self) {
                     coordinatedTapCount += 1
                 }
                 .frame(height: 44)
@@ -119,7 +110,7 @@ private struct StaticConstraintLifecycleDemo: View {
     }
 
     private func basicComposable<Content>(
-        _ content: Content,
+        _ content: Content.Type,
         onTap: @escaping @MainActor () -> Void
     ) -> some View where Content: UIButton & UIComposable & LifecycleActionPresenting {
         content.composable { button in
@@ -130,7 +121,7 @@ private struct StaticConstraintLifecycleDemo: View {
     }
 
     private func coordinatedComposable<Content>(
-        _ content: Content,
+        _ content: Content.Type,
         onTap: @escaping @MainActor () -> Void
     ) -> some View where Content: UIButton & UICoordinatedComposable & LifecycleActionPresenting {
         content.composable { button in
@@ -153,7 +144,7 @@ private struct StrongReferenceCycleLifecycleDemo: View {
                 Text("UILabel과 Coordinator가 서로 강하게 참조하고 disconnect가 이를 끊지 않는 구현입니다. 화면에서 제거해도 살아 있는 객체 수가 줄지 않습니다.")
 
                 if isPresented {
-                    StrongReferenceCycleLabel()
+                    StrongReferenceCycleLabel
                         .composable { label in
                             label.text = "강한 참조가 연결된 객체 #\(label.id)"
                             label.textAlignment = .center

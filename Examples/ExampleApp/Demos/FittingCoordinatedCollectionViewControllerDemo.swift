@@ -27,7 +27,7 @@ struct FittingCoordinatedCollectionViewControllerDemo: View {
                 }
 
                 DemoRegion(.uiKit) {
-                    CoordinatedDemoCollectionViewController()
+                    CoordinatedDemoCollectionViewController
                         .composable(
                             update: { viewController in
                                 viewController.collectionView.isScrollEnabled = false

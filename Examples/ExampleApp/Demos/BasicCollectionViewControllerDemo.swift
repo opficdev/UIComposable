@@ -15,7 +15,7 @@ struct BasicCollectionViewControllerDemo: View {
             }
 
             DemoRegion(.uiKit) {
-                DemoCollectionViewController()
+                    DemoCollectionViewController
                     .composable { viewController in
                         viewController.applyItems(Array(1...itemCount))
                     }
