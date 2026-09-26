@@ -23,6 +23,9 @@ struct ExampleIndexView: View {
                     NavigationLink("기본 CollectionViewController") {
                         BasicCollectionViewControllerDemo()
                     }
+                    NavigationLink("크기 계산 CollectionViewController") {
+                        FittingCollectionViewControllerDemo()
+                    }
                 }
             }
             .navigationTitle("UIComposable 예제")

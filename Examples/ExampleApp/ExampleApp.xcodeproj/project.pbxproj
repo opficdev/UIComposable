@@ -19,6 +19,7 @@
 		B10000000000000000000038 /* FittingCoordinatedCollectionViewDemo.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000028 /* FittingCoordinatedCollectionViewDemo.swift */; };
 		B10000000000000000000039 /* BasicCollectionViewControllerDemo.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000029 /* BasicCollectionViewControllerDemo.swift */; };
 		B1000000000000000000003A /* DemoCollectionViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000000000000000000002A /* DemoCollectionViewController.swift */; };
+		B1000000000000000000003B /* FittingCollectionViewControllerDemo.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000000000000000000002B /* FittingCollectionViewControllerDemo.swift */; };
 		B10000000000000000000042 /* UIComposable in Frameworks */ = {isa = PBXBuildFile; productRef = B10000000000000000000041 /* UIComposable */; };
 /* End PBXBuildFile section */
 
@@ -36,6 +37,7 @@
 		B10000000000000000000028 /* FittingCoordinatedCollectionViewDemo.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FittingCoordinatedCollectionViewDemo.swift; sourceTree = "<group>"; };
 		B10000000000000000000029 /* BasicCollectionViewControllerDemo.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BasicCollectionViewControllerDemo.swift; sourceTree = "<group>"; };
 		B1000000000000000000002A /* DemoCollectionViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DemoCollectionViewController.swift; sourceTree = "<group>"; };
+		B1000000000000000000002B /* FittingCollectionViewControllerDemo.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FittingCollectionViewControllerDemo.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -86,6 +88,7 @@
 				B10000000000000000000026 /* CoordinatedCollectionViewDemo.swift */,
 				B10000000000000000000028 /* FittingCoordinatedCollectionViewDemo.swift */,
 				B10000000000000000000029 /* BasicCollectionViewControllerDemo.swift */,
+				B1000000000000000000002B /* FittingCollectionViewControllerDemo.swift */,
 			);
 			path = Demos;
 			sourceTree = "<group>";
@@ -196,6 +199,7 @@
 				B10000000000000000000038 /* FittingCoordinatedCollectionViewDemo.swift in Sources */,
 				B10000000000000000000039 /* BasicCollectionViewControllerDemo.swift in Sources */,
 				B1000000000000000000003A /* DemoCollectionViewController.swift in Sources */,
+				B1000000000000000000003B /* FittingCollectionViewControllerDemo.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
