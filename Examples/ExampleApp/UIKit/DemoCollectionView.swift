@@ -3,7 +3,7 @@ import UIComposable
 
 @MainActor
 final class DemoCollectionView: UICollectionView, UIComposable {
-    private static let cellRegistration = CellRegistration<UICollectionViewCell, Int> { cell, _, item in
+    static let cellRegistration = CellRegistration<UICollectionViewCell, Int> { cell, _, item in
         var content = UIListContentConfiguration.cell()
         content.text = "항목 \(item)"
         cell.contentConfiguration = content
@@ -44,7 +44,7 @@ final class DemoCollectionView: UICollectionView, UIComposable {
         diffableDataSource.apply(snapshot, animatingDifferences: false)
     }
 
-    private static func makeLayout() -> UICollectionViewLayout {
+    static func makeLayout() -> UICollectionViewLayout {
         UICollectionViewCompositionalLayout { _, environment in
             let width = environment.container.effectiveContentSize.width
             let columns = CollectionLayoutMetrics.columns(for: width)
