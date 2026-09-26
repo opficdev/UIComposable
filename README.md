@@ -1,7 +1,7 @@
 <h1 align="center">UIComposable</h1>
 
 <p align="center">
-  UIKit 인스턴스를 SwiftUI의 .composable(update:)로 표시해요.
+  UIKit 타입을 SwiftUI의 .composable(update:)로 표시해요.
 </p>
 
 <p align="center">
@@ -15,15 +15,15 @@
 
 <br />
 
-UIComposable은 `UIView`와 `UIViewController` 인스턴스를 SwiftUI 화면에 연결해요. 기본 Bridge는 외부 `update`만 적용하고, Delegate처럼 별도 객체가 필요한 경우에는 `UICoordinatedComposable`이 Coordinator lifecycle을 관리해요.
+UIComposable은 `UIView`와 `UIViewController` 타입을 SwiftUI 화면에 연결해요. UIKit 객체는 SwiftUI identity가 시작될 때 생성되고 같은 identity 동안 재사용돼요. 기본 Bridge는 외부 `update`만 적용하고, Delegate처럼 별도 객체가 필요한 경우에는 `UICoordinatedComposable`이 Coordinator lifecycle을 관리해요.
 
 iOS 17 이상과 Swift 6 이상이 필요해요.
 
 ## 설치
 
-UIComposable은 Swift Package Manager에서 설치해요. 아래 `sizeThatFits:` 예제를 사용하려면 `0.2.0`이 필요해요. `0.x.y`에서는 minor version이 호환성을 보장하지 않으므로 `Up to Next Minor Version`으로 `0.2.x` 범위의 업데이트를 받아요.
+UIComposable은 Swift Package Manager에서 설치해요. `0.x.y`에서는 minor version이 호환성을 보장하지 않으므로 `Up to Next Minor Version`으로 `0.3.x` 범위의 업데이트를 받아요.
 
-Xcode에서는 File > Add Package Dependencies...를 선택하고 아래 URL을 입력해요. Dependency Rule은 Up to Next Minor Version, 버전은 `0.2.0`으로 설정해요.
+Xcode에서는 File > Add Package Dependencies...를 선택하고 아래 URL을 입력해요. Dependency Rule은 Up to Next Minor Version, 버전은 `0.3.0`으로 설정해요.
 
 ```
 https://github.com/opficdev/UIComposable.git
@@ -35,7 +35,7 @@ https://github.com/opficdev/UIComposable.git
 dependencies: [
 	.package(
 		url: "https://github.com/opficdev/UIComposable.git",
-		.upToNextMinor(from: "0.2.0")
+		.upToNextMinor(from: "0.3.0")
 	)
 ]
 ```
@@ -49,11 +49,11 @@ dependencies: [
 )
 ```
 
-재현 가능한 build가 필요하면 Dependency Rule을 **Exact Version**으로 설정하거나 `Package.swift`의 dependency를 `.exact("0.2.0")`으로 바꿔요.
+재현 가능한 build가 필요하면 Dependency Rule을 **Exact Version**으로 설정하거나 `Package.swift`의 dependency를 `.exact("0.3.0")`으로 바꿔요.
 
 ## 첫 composable
 
-`UIComposable`을 채택한 `UIView` 또는 `UIViewController`에서 `.composable(update:)`를 호출해요. SwiftUI가 다시 그릴 때마다 실제로 표시 중인 UIKit 인스턴스에 `update`가 적용돼요. 아래 코드는 [ExampleApp의 기본 CollectionView 예제](Examples/ExampleApp/Demos/BasicCollectionViewDemo.swift)에서 핵심 호출을 발췌했어요. `DemoCollectionView`는 예제 앱에서 정의한 타입이며 [구현 코드](Examples/ExampleApp/UIKit/DemoCollectionView.swift)를 함께 볼 수 있어요.
+`UIComposable`을 채택한 `UIView` 또는 `UIViewController` 타입에서 정적 `.composable(update:)`를 호출해요. SwiftUI가 객체를 처음 표시할 때 Bridge가 UIKit 객체를 만들고, 이후에는 실제로 표시 중인 객체에 `update`를 적용해요. 아래 코드는 [ExampleApp의 기본 CollectionView 예제](Examples/ExampleApp/Demos/BasicCollectionViewDemo.swift)에서 핵심 호출을 발췌했어요. `DemoCollectionView`는 예제 앱에서 정의한 타입이며 [구현 코드](Examples/ExampleApp/UIKit/DemoCollectionView.swift)를 함께 볼 수 있어요.
 
 ```swift
 import SwiftUI
@@ -63,7 +63,7 @@ struct BasicCollectionViewDemo: View {
 	@State private var itemCount = 6
 
 	var body: some View {
-		DemoCollectionView()
+		DemoCollectionView
 			.composable { collectionView in
 				collectionView.applyItems(Array(1...itemCount))
 			}
@@ -72,7 +72,9 @@ struct BasicCollectionViewDemo: View {
 }
 ```
 
-`UIComposable`과 `.composable(update:)`는 `@MainActor` API예요. UIKit 인스턴스 생성과 update는 main actor에서 수행해야 해요.
+`UIComposable` 채택 타입은 Bridge가 직접 생성할 수 있도록 무매개변수 `init()`을 제공해야 해요.
+
+`UIComposable`과 `.composable(update:)`는 `@MainActor` API예요. UIKit 객체 생성과 update는 main actor에서 수행돼요.
 
 ## 크기 계산
 
@@ -89,7 +91,7 @@ struct FittingCollectionViewDemo: View {
 	@State private var width = 260.0
 
 	var body: some View {
-		DemoCollectionView()
+		DemoCollectionView
 			.composable(
 				update: { collectionView in
 					collectionView.isScrollEnabled = false
@@ -131,7 +133,7 @@ struct CoordinatedCollectionViewDemo: View {
 	@State private var endedDisplayingItem: Int?
 
 	var body: some View {
-		CoordinatedDemoCollectionView()
+		CoordinatedDemoCollectionView
 			.composable { collectionView in
 				collectionView.items = Array(1...itemCount)
 				collectionView.onSelection = { selectedItem = $0 }
@@ -145,9 +147,9 @@ struct CoordinatedCollectionViewDemo: View {
 
 ### lifecycle
 
-SwiftUI identity마다 `makeCoordinator()`가 한 번 호출돼요.
+SwiftUI identity마다 UIKit 객체와 Coordinator가 한 번 생성돼요.
 
-1. 최초 표시에서 `connect(coordinator:)`, 외부 `update`, `update(coordinator:)` 순으로 호출돼요.
+1. 최초 표시에서 UIKit 객체 생성, `makeCoordinator()`, `connect(coordinator:)`, 외부 `update`, `update(coordinator:)` 순으로 호출돼요.
 2. 이후 갱신에서 실제로 표시 중인 UIKit 인스턴스에 외부 `update`를 적용한 뒤 같은 Coordinator로 `update(coordinator:)`를 호출해요.
 3. identity가 사라질 때 실제로 표시 중인 UIKit 인스턴스와 같은 Coordinator로 `disconnect(coordinator:)`를 호출해요.
 
@@ -159,7 +161,7 @@ identity가 바뀌면 새 Coordinator가 생성될 수 있어요. 외부 `update
 
 ```swift
 @MainActor
-func coordinatedView<T>(_ content: T) -> some View
+func coordinatedView<T>(_ content: T.Type) -> some View
 where T: UICollectionView & UICoordinatedComposable {
     content.composable()
 }
@@ -169,7 +171,7 @@ where T: UICollectionView & UICoordinatedComposable {
 
 ## 예제 앱
 
-[ExampleApp](Examples/ExampleApp/ExampleApp.xcodeproj)은 `UICollectionView`와 `UICollectionViewController`의 기본, 크기 계산, Coordinator, Coordinator와 크기 계산 경로를 각각 보여줘요. 모두 여덟 화면이며 저장소의 `UIComposable` 패키지를 상대 경로로 사용해요.
+[ExampleApp](Examples/ExampleApp/ExampleApp.xcodeproj)은 `UICollectionView`와 `UICollectionViewController`의 기본, 크기 계산, Coordinator, Coordinator와 크기 계산 경로를 각각 보여줘요. 생명주기 화면에서는 UIKit 객체의 생성 수, Generic 제약에 따른 Bridge 선택, 강한 참조 해제를 확인할 수 있어요. 모두 아홉 화면이며 저장소의 `UIComposable` 패키지를 상대 경로로 사용해요.
 
 Xcode에서 `Examples/ExampleApp/ExampleApp.xcodeproj`를 열고 `ExampleApp` scheme과 iOS Simulator를 선택해 실행할 수 있어요. 실행 없이 빌드만 확인하려면 저장소 루트에서 다음 명령을 사용해요.
 

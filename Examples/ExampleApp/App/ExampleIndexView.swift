@@ -1,6 +1,7 @@
 import SwiftUI
 
 private enum ExampleRoute: Hashable {
+    case lifecycleRisk
     case basicCollectionView
     case fittingCollectionView
     case coordinatedCollectionView
@@ -15,6 +16,10 @@ struct ExampleIndexView: View {
     var body: some View {
         NavigationStack {
             List {
+                Section("Lifecycle") {
+                    NavigationLink("생명주기 위험 재현", value: ExampleRoute.lifecycleRisk)
+                }
+
                 Section("UIView") {
                     NavigationLink("기본 CollectionView", value: ExampleRoute.basicCollectionView)
                     NavigationLink("크기 계산 CollectionView", value: ExampleRoute.fittingCollectionView)
@@ -47,6 +52,8 @@ struct ExampleIndexView: View {
             .navigationTitle("UIComposable 예제")
             .navigationDestination(for: ExampleRoute.self) { route in
                 switch route {
+                case .lifecycleRisk:
+                    LifecycleRiskDemo()
                 case .basicCollectionView:
                     BasicCollectionViewDemo()
                 case .fittingCollectionView:

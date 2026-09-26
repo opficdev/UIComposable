@@ -2,47 +2,47 @@ import Testing
 import SwiftUI
 @testable import UIComposable
 
-@Test("UIViewBridge가_최초_UIView에_update를_적용한다")
+@Test("UIViewBridge는_makeContent가_호출될_때_UIView를_생성한다")
 @MainActor
-func UIViewBridge가_최초_UIView에_update를_적용한다() {
-    let view = UIComposableView()
-    let bridge = UIViewBridge(content: view) { target in
+func UIViewBridge는_makeContent가_호출될_때_UIView를_생성한다() {
+    UIComposableView.creationCount = 0
+    let bridge = UIViewBridge<UIComposableView> { target in
         target.tag = 1
     }
+
+    #expect(UIComposableView.creationCount == 0)
 
     let displayed = bridge.makeContent()
 
-    #expect(displayed === view)
+    #expect(UIComposableView.creationCount == 1)
     #expect(displayed.tag == 1)
 }
 
-@Test("UIViewBridge가_실제_UIView에_update를_적용한다")
+@Test("UIViewBridge는_후속_갱신에서_새_UIView를_생성하지_않는다")
 @MainActor
-func UIViewBridge가_실제_UIView에_update를_적용한다() {
-    let displayed = UIComposableView()
-    let initialBridge = UIViewBridge(content: displayed) { target in
+func UIViewBridge는_후속_갱신에서_새_UIView를_생성하지_않는다() {
+    UIComposableView.creationCount = 0
+    let initialBridge = UIViewBridge<UIComposableView> { target in
         target.tag = 1
     }
-    _ = initialBridge.makeContent()
-
-    let candidate = UIComposableView()
-    let updatedBridge = UIViewBridge(content: candidate) { target in
+    let displayed = initialBridge.makeContent()
+    let updatedBridge = UIViewBridge<UIComposableView> { target in
         target.tag = 2
     }
+
     updatedBridge.updateContent(displayed)
 
+    #expect(UIComposableView.creationCount == 1)
     #expect(displayed.tag == 2)
-    #expect(candidate.tag == 0)
 }
 
 @Test("UIViewBridge가_실제_UIView에_sizeThatFits를_적용한다")
 @MainActor
 func UIViewBridge가_실제_UIView에_sizeThatFits를_적용한다() {
     let displayed = UIComposableView()
-    let candidate = UIComposableView()
     var received: UIComposableView?
     var receivedWidth: CGFloat?
-    let bridge = UIViewBridge(content: candidate, update: { _ in }, sizing: { proposal, view in
+    let bridge = UIViewBridge<UIComposableView>(update: { _ in }, sizing: { proposal, view in
         received = view
         receivedWidth = proposal.width
         return CGSize(width: 120, height: 80)
@@ -59,7 +59,7 @@ func UIViewBridge가_실제_UIView에_sizeThatFits를_적용한다() {
 @MainActor
 func UIViewBridge가_sizing_미지정_시_nil을_반환한다() {
     let view = UIComposableView()
-    let bridge = UIViewBridge(content: view, update: { _ in })
+    let bridge = UIViewBridge<UIComposableView>(update: { _ in })
 
     #expect(bridge.sizeContent(ProposedViewSize(width: 120, height: nil), content: view) == nil)
 }
@@ -67,56 +67,62 @@ func UIViewBridge가_sizing_미지정_시_nil을_반환한다() {
 @Test("SwiftUI가_UIViewBridge의_sizeThatFits_hook을_호출한다")
 @MainActor
 func SwiftUI가_UIViewBridge의_sizeThatFits_hook을_호출한다() {
-    let view = UIComposableView()
     var received: UIComposableView?
-    let bridge = UIViewBridge(content: view, update: { _ in }, sizing: { _, view in
+    let bridge = UIViewBridge<UIComposableView>(update: { _ in }, sizing: { _, view in
         received = view
         return CGSize(width: 120, height: 80)
     })
 
     measure(bridge)
 
-    #expect(received === view)
+    #expect(received != nil)
 }
 
 @Test("CoordinatedUIViewBridge가_Coordinator_lifecycle을_실제_UIView에_적용한다")
 @MainActor
-func coordinatedUIViewBridge가_Coordinator_lifecycle을_실제_UIView에_적용한다() {
-    let events = CoordinatorLifecycleEvents()
-    let displayed = UICoordinatedView(events: events)
-    let bridge = CoordinatedUIViewBridge(content: displayed) { target in
-        events.values.append("initial update")
+func coordinatedUIViewBridge가_Coordinator_lifecycle을_실제_UIView에_적용한다() throws {
+    UICoordinatedView.creationCount = 0
+    let bridge = CoordinatedUIViewBridge<UICoordinatedView> { target in
+        target.events.values.append("initial update")
         target.tag = 1
     }
-    let coordinator = bridge.makeCoordinator()
-    let made = bridge.makeContent(coordinator: coordinator)
-    let candidate = UICoordinatedView(events: events)
-    let updatedBridge = CoordinatedUIViewBridge(content: candidate) { target in
-        events.values.append("updated update")
+    let storage = bridge.makeCoordinator()
+
+    #expect(UICoordinatedView.creationCount == 0)
+
+    let displayed = bridge.makeContent(coordinator: storage)
+    let coordinator = try #require(storage.value)
+    let updatedBridge = CoordinatedUIViewBridge<UICoordinatedView> { target in
+        target.events.values.append("updated update")
         target.tag = 2
     }
 
-    updatedBridge.updateContent(displayed, coordinator: coordinator)
-    CoordinatedUIViewBridge<UICoordinatedView>.dismantleUIView(displayed, coordinator: coordinator)
+    updatedBridge.updateContent(displayed, coordinator: storage)
+    CoordinatedUIViewBridge<UICoordinatedView>.dismantleUIView(displayed, coordinator: storage)
 
-    #expect(displayed === made)
+    #expect(UICoordinatedView.creationCount == 1)
     #expect(displayed.tag == 2)
-    #expect(candidate.tag == 0)
     #expect(displayed.makeCoordinatorCallCount == 1)
     #expect(coordinator.connectedContent === displayed)
     #expect(coordinator.updatedContent === displayed)
     #expect(coordinator.disconnectedContent === displayed)
-    #expect(events.values == ["connect", "initial update", "coordinator update", "updated update", "coordinator update", "disconnect"])
+    #expect(storage.value == nil)
+    #expect(displayed.events.values == [
+        "connect",
+        "initial update",
+        "coordinator update",
+        "updated update",
+        "coordinator update",
+        "disconnect"
+    ])
 }
 
 @Test("CoordinatedUIViewBridge가_실제_UIView에_sizeThatFits를_적용하고_Coordinator를_갱신하지_않는다")
 @MainActor
 func coordinatedUIViewBridge가_실제_UIView에_sizeThatFits를_적용하고_Coordinator를_갱신하지_않는다() {
-    let events = CoordinatorLifecycleEvents()
-    let displayed = UICoordinatedView(events: events)
-    let candidate = UICoordinatedView(events: events)
+    let displayed = UICoordinatedView()
     var received: UICoordinatedView?
-    let bridge = CoordinatedUIViewBridge(content: candidate, update: { _ in }, sizing: { _, view in
+    let bridge = CoordinatedUIViewBridge<UICoordinatedView>(update: { _ in }, sizing: { _, view in
         received = view
         return CGSize(width: 120, height: 80)
     })
@@ -125,40 +131,37 @@ func coordinatedUIViewBridge가_실제_UIView에_sizeThatFits를_적용하고_Co
 
     #expect(size == CGSize(width: 120, height: 80))
     #expect(received === displayed)
-    #expect(events.values.isEmpty)
+    #expect(displayed.events.values.isEmpty)
 }
 
 @Test("CoordinatedUIViewBridge가_sizing_미지정_시_nil을_반환한다")
 @MainActor
 func coordinatedUIViewBridge가_sizing_미지정_시_nil을_반환한다() {
-    let events = CoordinatorLifecycleEvents()
-    let view = UICoordinatedView(events: events)
-    let bridge = CoordinatedUIViewBridge(content: view, update: { _ in })
+    let view = UICoordinatedView()
+    let bridge = CoordinatedUIViewBridge<UICoordinatedView>(update: { _ in })
 
     #expect(bridge.sizeContent(ProposedViewSize(width: 120, height: nil), content: view) == nil)
-    #expect(events.values.isEmpty)
+    #expect(view.events.values.isEmpty)
 }
 
 @Test("SwiftUI가_CoordinatedUIViewBridge의_sizeThatFits_hook을_호출한다")
 @MainActor
 func SwiftUI가_CoordinatedUIViewBridge의_sizeThatFits_hook을_호출한다() {
-    let events = CoordinatorLifecycleEvents()
-    let view = UICoordinatedView(events: events)
     var received: UICoordinatedView?
-    let bridge = CoordinatedUIViewBridge(content: view, update: { _ in }, sizing: { _, view in
+    let bridge = CoordinatedUIViewBridge<UICoordinatedView>(update: { _ in }, sizing: { _, view in
         received = view
         return CGSize(width: 120, height: 80)
     })
 
     measure(bridge)
 
-    #expect(received === view)
+    #expect(received != nil)
 }
 
 @Test("UICoordinatedComposable_UIView가_Coordinator_Bridge를_선택한다")
 @MainActor
 func UICoordinatedComposable_UIView가_Coordinator_Bridge를_선택한다() {
-    let composable = UICoordinatedView(events: CoordinatorLifecycleEvents()).composable()
+    let composable = UICoordinatedView.composable()
 
     #expect(composable is CoordinatedUIViewBridge<UICoordinatedView>)
 }
@@ -166,55 +169,54 @@ func UICoordinatedComposable_UIView가_Coordinator_Bridge를_선택한다() {
 @Test("UIView_제네릭_제약이_composable_Bridge를_선택한다")
 @MainActor
 func UIView_제네릭_제약이_composable_Bridge를_선택한다() {
-    let content = UICoordinatedView(events: CoordinatorLifecycleEvents())
-    let basicComposable = basicUIViewComposable(content)
-    let coordinatedComposable = coordinatedUIViewComposable(content)
+    let basicComposable = basicUIViewComposable(UICoordinatedView.self)
+    let coordinatedComposable = coordinatedUIViewComposable(UICoordinatedView.self)
 
     #expect(basicComposable is UIViewBridge<UICoordinatedView>)
     #expect(coordinatedComposable is CoordinatedUIViewBridge<UICoordinatedView>)
 }
 
-@Test("UIViewControllerBridge가_최초_UIViewController에_update를_적용한다")
+@Test("UIViewControllerBridge는_makeContent가_호출될_때_UIViewController를_생성한다")
 @MainActor
-func UIViewControllerBridge가_최초_UIViewController에_update를_적용한다() {
-    let viewController = UIComposableViewController()
-    let bridge = UIViewControllerBridge(content: viewController) { target in
+func UIViewControllerBridge는_makeContent가_호출될_때_UIViewController를_생성한다() {
+    UIComposableViewController.creationCount = 0
+    let bridge = UIViewControllerBridge<UIComposableViewController> { target in
         target.title = "created"
     }
 
+    #expect(UIComposableViewController.creationCount == 0)
+
     let displayed = bridge.makeContent()
 
-    #expect(displayed === viewController)
+    #expect(UIComposableViewController.creationCount == 1)
     #expect(displayed.title == "created")
 }
 
-@Test("UIViewControllerBridge가_실제_UIViewController에_update를_적용한다")
+@Test("UIViewControllerBridge는_후속_갱신에서_새_UIViewController를_생성하지_않는다")
 @MainActor
-func UIViewControllerBridge가_실제_UIViewController에_update를_적용한다() {
-    let displayed = UIComposableViewController()
-    let initialBridge = UIViewControllerBridge(content: displayed) { target in
+func UIViewControllerBridge는_후속_갱신에서_새_UIViewController를_생성하지_않는다() {
+    UIComposableViewController.creationCount = 0
+    let initialBridge = UIViewControllerBridge<UIComposableViewController> { target in
         target.title = "initial"
     }
-    _ = initialBridge.makeContent()
-
-    let candidate = UIComposableViewController()
-    let updatedBridge = UIViewControllerBridge(content: candidate) { target in
+    let displayed = initialBridge.makeContent()
+    let updatedBridge = UIViewControllerBridge<UIComposableViewController> { target in
         target.title = "updated"
     }
+
     updatedBridge.updateContent(displayed)
 
+    #expect(UIComposableViewController.creationCount == 1)
     #expect(displayed.title == "updated")
-    #expect(candidate.title == nil)
 }
 
 @Test("UIViewControllerBridge가_실제_UIViewController에_sizeThatFits를_적용한다")
 @MainActor
 func UIViewControllerBridge가_실제_UIViewController에_sizeThatFits를_적용한다() {
     let displayed = UIComposableViewController()
-    let candidate = UIComposableViewController()
     var received: UIComposableViewController?
     var receivedHeight: CGFloat?
-    let bridge = UIViewControllerBridge(content: candidate, update: { _ in }, sizing: { proposal, view in
+    let bridge = UIViewControllerBridge<UIComposableViewController>(update: { _ in }, sizing: { proposal, view in
         received = view
         receivedHeight = proposal.height
         return CGSize(width: 120, height: 80)
@@ -231,7 +233,7 @@ func UIViewControllerBridge가_실제_UIViewController에_sizeThatFits를_적용
 @MainActor
 func UIViewControllerBridge가_sizing_미지정_시_nil을_반환한다() {
     let viewController = UIComposableViewController()
-    let bridge = UIViewControllerBridge(content: viewController, update: { _ in })
+    let bridge = UIViewControllerBridge<UIComposableViewController>(update: { _ in })
 
     #expect(bridge.sizeContent(ProposedViewSize(width: 120, height: nil), content: viewController) == nil)
 }
@@ -239,56 +241,65 @@ func UIViewControllerBridge가_sizing_미지정_시_nil을_반환한다() {
 @Test("SwiftUI가_UIViewControllerBridge의_sizeThatFits_hook을_호출한다")
 @MainActor
 func SwiftUI가_UIViewControllerBridge의_sizeThatFits_hook을_호출한다() {
-    let viewController = UIComposableViewController()
     var received: UIComposableViewController?
-    let bridge = UIViewControllerBridge(content: viewController, update: { _ in }, sizing: { _, viewController in
+    let bridge = UIViewControllerBridge<UIComposableViewController>(update: { _ in }, sizing: { _, viewController in
         received = viewController
         return CGSize(width: 120, height: 80)
     })
 
     measure(bridge)
 
-    #expect(received === viewController)
+    #expect(received != nil)
 }
 
 @Test("CoordinatedUIViewControllerBridge가_Coordinator_lifecycle을_실제_UIViewController에_적용한다")
 @MainActor
-func coordinatedUIViewControllerBridge가_Coordinator_lifecycle을_실제_UIViewController에_적용한다() {
-    let events = CoordinatorLifecycleEvents()
-    let displayed = UICoordinatedViewController(events: events)
-    let bridge = CoordinatedUIViewControllerBridge(content: displayed) { target in
-        events.values.append("initial update")
+func coordinatedUIViewControllerBridge가_Coordinator_lifecycle을_실제_UIViewController에_적용한다() throws {
+    UICoordinatedViewController.creationCount = 0
+    let bridge = CoordinatedUIViewControllerBridge<UICoordinatedViewController> { target in
+        target.events.values.append("initial update")
         target.title = "initial"
     }
-    let coordinator = bridge.makeCoordinator()
-    let made = bridge.makeContent(coordinator: coordinator)
-    let candidate = UICoordinatedViewController(events: events)
-    let updatedBridge = CoordinatedUIViewControllerBridge(content: candidate) { target in
-        events.values.append("updated update")
+    let storage = bridge.makeCoordinator()
+
+    #expect(UICoordinatedViewController.creationCount == 0)
+
+    let displayed = bridge.makeContent(coordinator: storage)
+    let coordinator = try #require(storage.value)
+    let updatedBridge = CoordinatedUIViewControllerBridge<UICoordinatedViewController> { target in
+        target.events.values.append("updated update")
         target.title = "updated"
     }
 
-    updatedBridge.updateContent(displayed, coordinator: coordinator)
-    CoordinatedUIViewControllerBridge<UICoordinatedViewController>.dismantleUIViewController(displayed, coordinator: coordinator)
+    updatedBridge.updateContent(displayed, coordinator: storage)
+    CoordinatedUIViewControllerBridge<UICoordinatedViewController>.dismantleUIViewController(
+        displayed,
+        coordinator: storage
+    )
 
-    #expect(displayed === made)
+    #expect(UICoordinatedViewController.creationCount == 1)
     #expect(displayed.title == "updated")
-    #expect(candidate.title == nil)
     #expect(displayed.makeCoordinatorCallCount == 1)
     #expect(coordinator.connectedContent === displayed)
     #expect(coordinator.updatedContent === displayed)
     #expect(coordinator.disconnectedContent === displayed)
-    #expect(events.values == ["connect", "initial update", "coordinator update", "updated update", "coordinator update", "disconnect"])
+    #expect(storage.value == nil)
+    #expect(displayed.events.values == [
+        "connect",
+        "initial update",
+        "coordinator update",
+        "updated update",
+        "coordinator update",
+        "disconnect"
+    ])
 }
 
 @Test("CoordinatedUIViewControllerBridge가_실제_UIViewController에_sizeThatFits를_적용하고_Coordinator를_갱신하지_않는다")
 @MainActor
 func coordinatedUIViewControllerBridge가_실제_UIViewController에_sizeThatFits를_적용하고_Coordinator를_갱신하지_않는다() {
-    let events = CoordinatorLifecycleEvents()
-    let displayed = UICoordinatedViewController(events: events)
-    let candidate = UICoordinatedViewController(events: events)
+    let displayed = UICoordinatedViewController()
     var received: UICoordinatedViewController?
-    let bridge = CoordinatedUIViewControllerBridge(content: candidate, update: { _ in }, sizing: { _, view in
+    let bridge = CoordinatedUIViewControllerBridge<UICoordinatedViewController>(update: { _ in }, sizing: { _, view in
         received = view
         return CGSize(width: 120, height: 80)
     })
@@ -297,41 +308,38 @@ func coordinatedUIViewControllerBridge가_실제_UIViewController에_sizeThatFit
 
     #expect(size == CGSize(width: 120, height: 80))
     #expect(received === displayed)
-    #expect(events.values.isEmpty)
+    #expect(displayed.events.values.isEmpty)
 }
 
 @Test("CoordinatedUIViewControllerBridge가_sizing_미지정_시_nil을_반환한다")
 @MainActor
 func coordinatedUIViewControllerBridge가_sizing_미지정_시_nil을_반환한다() {
-    let events = CoordinatorLifecycleEvents()
-    let viewController = UICoordinatedViewController(events: events)
-    let bridge = CoordinatedUIViewControllerBridge(content: viewController, update: { _ in })
+    let viewController = UICoordinatedViewController()
+    let bridge = CoordinatedUIViewControllerBridge<UICoordinatedViewController>(update: { _ in })
 
     #expect(bridge.sizeContent(ProposedViewSize(width: 120, height: nil), content: viewController) == nil)
-    #expect(events.values.isEmpty)
+    #expect(viewController.events.values.isEmpty)
 }
 
 @Test("SwiftUI가_CoordinatedUIViewControllerBridge의_sizeThatFits_hook을_호출한다")
 @MainActor
 func SwiftUI가_CoordinatedUIViewControllerBridge의_sizeThatFits_hook을_호출한다() {
-    let events = CoordinatorLifecycleEvents()
-    let viewController = UICoordinatedViewController(events: events)
     var received: UICoordinatedViewController?
-    let bridge = CoordinatedUIViewControllerBridge(content: viewController, update: { _ in }, sizing: { _, viewController in
+    let bridge = CoordinatedUIViewControllerBridge<UICoordinatedViewController>(update: { _ in }, sizing: { _, viewController in
         received = viewController
         return CGSize(width: 120, height: 80)
     })
 
     measure(bridge)
 
-    #expect(received === viewController)
+    #expect(received != nil)
 }
 
 @Test("UICoordinatedComposable이_sizeThatFits_composable에서_Coordinator_Bridge를_선택한다")
 @MainActor
 func UICoordinatedComposable이_sizeThatFits_composable에서_Coordinator_Bridge를_선택한다() {
-    let view = UICoordinatedView(events: CoordinatorLifecycleEvents()).composable(sizeThatFits: { _, _ in nil })
-    let viewController = UICoordinatedViewController(events: CoordinatorLifecycleEvents()).composable(sizeThatFits: { _, _ in nil })
+    let view = UICoordinatedView.composable(sizeThatFits: { _, _ in nil })
+    let viewController = UICoordinatedViewController.composable(sizeThatFits: { _, _ in nil })
 
     #expect(view is CoordinatedUIViewBridge<UICoordinatedView>)
     #expect(viewController is CoordinatedUIViewControllerBridge<UICoordinatedViewController>)
@@ -340,7 +348,7 @@ func UICoordinatedComposable이_sizeThatFits_composable에서_Coordinator_Bridge
 @Test("UICoordinatedComposable_UIViewController가_Coordinator_Bridge를_선택한다")
 @MainActor
 func UICoordinatedComposable_UIViewController가_Coordinator_Bridge를_선택한다() {
-    let composable = UICoordinatedViewController(events: CoordinatorLifecycleEvents()).composable()
+    let composable = UICoordinatedViewController.composable()
 
     #expect(composable is CoordinatedUIViewControllerBridge<UICoordinatedViewController>)
 }
@@ -348,31 +356,33 @@ func UICoordinatedComposable_UIViewController가_Coordinator_Bridge를_선택한
 @Test("UIViewController_제네릭_제약이_composable_Bridge를_선택한다")
 @MainActor
 func UIViewController_제네릭_제약이_composable_Bridge를_선택한다() {
-    let content = UICoordinatedViewController(events: CoordinatorLifecycleEvents())
-    let basicComposable = basicUIViewControllerComposable(content)
-    let coordinatedComposable = coordinatedUIViewControllerComposable(content)
+    let basicComposable = basicUIViewControllerComposable(UICoordinatedViewController.self)
+    let coordinatedComposable = coordinatedUIViewControllerComposable(UICoordinatedViewController.self)
 
     #expect(basicComposable is UIViewControllerBridge<UICoordinatedViewController>)
     #expect(coordinatedComposable is CoordinatedUIViewControllerBridge<UICoordinatedViewController>)
 }
 
 @MainActor
-private func basicUIViewComposable<Content>(_ content: Content) -> some View where Content: UIView & UIComposable {
+private func basicUIViewComposable<Content>(_ content: Content.Type) -> some View
+where Content: UIView & UIComposable {
     content.composable()
 }
 
 @MainActor
-private func coordinatedUIViewComposable<Content>(_ content: Content) -> some View where Content: UIView & UICoordinatedComposable {
+private func coordinatedUIViewComposable<Content>(_ content: Content.Type) -> some View
+where Content: UIView & UICoordinatedComposable {
     content.composable()
 }
 
 @MainActor
-private func basicUIViewControllerComposable<Content>(_ content: Content) -> some View where Content: UIViewController & UIComposable {
+private func basicUIViewControllerComposable<Content>(_ content: Content.Type) -> some View
+where Content: UIViewController & UIComposable {
     content.composable()
 }
 
 @MainActor
-private func coordinatedUIViewControllerComposable<Content>(_ content: Content) -> some View
+private func coordinatedUIViewControllerComposable<Content>(_ content: Content.Type) -> some View
 where Content: UIViewController & UICoordinatedComposable {
     content.composable()
 }
@@ -385,10 +395,34 @@ private func measure<Content>(_ content: Content) where Content: View {
 }
 
 @MainActor
-private final class UIComposableView: UIView, UIComposable {}
+private final class UIComposableView: UIView, UIComposable {
+    static var creationCount = 0
+
+    init() {
+        Self.creationCount += 1
+        super.init(frame: .zero)
+    }
+
+    @available(*, unavailable)
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+}
 
 @MainActor
-private final class UIComposableViewController: UIViewController, UIComposable {}
+private final class UIComposableViewController: UIViewController, UIComposable {
+    static var creationCount = 0
+
+    init() {
+        Self.creationCount += 1
+        super.init(nibName: nil, bundle: nil)
+    }
+
+    @available(*, unavailable)
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+}
 
 @MainActor
 private final class UICoordinatedView: UIView, UICoordinatedComposable {
@@ -398,11 +432,13 @@ private final class UICoordinatedView: UIView, UICoordinatedComposable {
         weak var disconnectedContent: UICoordinatedView?
     }
 
-    let events: CoordinatorLifecycleEvents
+    static var creationCount = 0
+
+    let events = CoordinatorLifecycleEvents()
     private(set) var makeCoordinatorCallCount = 0
 
-    init(events: CoordinatorLifecycleEvents) {
-        self.events = events
+    init() {
+        Self.creationCount += 1
         super.init(frame: .zero)
     }
 
@@ -440,11 +476,13 @@ private final class UICoordinatedViewController: UIViewController, UICoordinated
         weak var disconnectedContent: UICoordinatedViewController?
     }
 
-    let events: CoordinatorLifecycleEvents
+    static var creationCount = 0
+
+    let events = CoordinatorLifecycleEvents()
     private(set) var makeCoordinatorCallCount = 0
 
-    init(events: CoordinatorLifecycleEvents) {
-        self.events = events
+    init() {
+        Self.creationCount += 1
         super.init(nibName: nil, bundle: nil)
     }
 

@@ -15,7 +15,7 @@ struct BasicCollectionViewDemo: View {
             }
 
             DemoRegion(.uiKit) {
-                DemoCollectionView()
+                    DemoCollectionView
                     .composable { collectionView in
                         collectionView.applyItems(Array(1...itemCount))
                     }

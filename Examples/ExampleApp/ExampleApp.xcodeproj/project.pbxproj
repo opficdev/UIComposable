@@ -23,6 +23,7 @@
 		B1000000000000000000003C /* CoordinatedCollectionViewControllerDemo.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000000000000000000002C /* CoordinatedCollectionViewControllerDemo.swift */; };
 		B1000000000000000000003D /* CoordinatedDemoCollectionViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000000000000000000002D /* CoordinatedDemoCollectionViewController.swift */; };
 		B1000000000000000000003E /* FittingCoordinatedCollectionViewControllerDemo.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000000000000000000002E /* FittingCoordinatedCollectionViewControllerDemo.swift */; };
+		B10000000000000000000043 /* LifecycleRiskDemo.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000044 /* LifecycleRiskDemo.swift */; };
 		B10000000000000000000042 /* UIComposable in Frameworks */ = {isa = PBXBuildFile; productRef = B10000000000000000000041 /* UIComposable */; };
 /* End PBXBuildFile section */
 
@@ -44,6 +45,7 @@
 		B1000000000000000000002C /* CoordinatedCollectionViewControllerDemo.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoordinatedCollectionViewControllerDemo.swift; sourceTree = "<group>"; };
 		B1000000000000000000002D /* CoordinatedDemoCollectionViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoordinatedDemoCollectionViewController.swift; sourceTree = "<group>"; };
 		B1000000000000000000002E /* FittingCoordinatedCollectionViewControllerDemo.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FittingCoordinatedCollectionViewControllerDemo.swift; sourceTree = "<group>"; };
+		B10000000000000000000044 /* LifecycleRiskDemo.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LifecycleRiskDemo.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -89,6 +91,7 @@
 		B10000000000000000000011 /* Demos */ = {
 			isa = PBXGroup;
 			children = (
+				B10000000000000000000044 /* LifecycleRiskDemo.swift */,
 				B10000000000000000000022 /* BasicCollectionViewDemo.swift */,
 				B10000000000000000000025 /* FittingCollectionViewDemo.swift */,
 				B10000000000000000000026 /* CoordinatedCollectionViewDemo.swift */,
@@ -212,6 +215,7 @@
 				B1000000000000000000003C /* CoordinatedCollectionViewControllerDemo.swift in Sources */,
 				B1000000000000000000003D /* CoordinatedDemoCollectionViewController.swift in Sources */,
 				B1000000000000000000003E /* FittingCoordinatedCollectionViewControllerDemo.swift in Sources */,
+				B10000000000000000000043 /* LifecycleRiskDemo.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

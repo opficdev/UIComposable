@@ -21,7 +21,7 @@ struct CoordinatedCollectionViewControllerDemo: View {
             }
 
             DemoRegion(.uiKit) {
-                CoordinatedDemoCollectionViewController()
+                    CoordinatedDemoCollectionViewController
                     .composable { viewController in
                         viewController.items = Array(1...itemCount)
                         viewController.onSelection = { selectedItem = $0 }

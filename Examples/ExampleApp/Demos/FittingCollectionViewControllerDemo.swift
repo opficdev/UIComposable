@@ -21,7 +21,7 @@ struct FittingCollectionViewControllerDemo: View {
                 }
 
                 DemoRegion(.uiKit) {
-                    DemoCollectionViewController()
+                    DemoCollectionViewController
                         .composable(
                             update: { viewController in
                                 viewController.applyItems(Array(1...itemCount))

@@ -27,7 +27,7 @@ struct FittingCoordinatedCollectionViewDemo: View {
                 }
 
                 DemoRegion(.uiKit) {
-                    CoordinatedDemoCollectionView()
+                    CoordinatedDemoCollectionView
                         .composable(
                             update: { collectionView in
                                 collectionView.isScrollEnabled = false
