@@ -14,6 +14,9 @@ struct ExampleIndexView: View {
                     NavigationLink("Coordinator CollectionView") {
                         CoordinatedCollectionViewDemo()
                     }
+                    NavigationLink("Coordinator 크기 계산 CollectionView") {
+                        FittingCoordinatedCollectionViewDemo()
+                    }
                 }
             }
             .navigationTitle("UIComposable 예제")
