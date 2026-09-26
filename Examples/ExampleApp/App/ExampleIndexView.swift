@@ -18,6 +18,12 @@ struct ExampleIndexView: View {
                         FittingCoordinatedCollectionViewDemo()
                     }
                 }
+
+                Section("UIViewController") {
+                    NavigationLink("기본 CollectionViewController") {
+                        BasicCollectionViewControllerDemo()
+                    }
+                }
             }
             .navigationTitle("UIComposable 예제")
         }
