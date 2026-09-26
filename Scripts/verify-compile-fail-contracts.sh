@@ -14,6 +14,9 @@ xcrun swiftc \
 
 for fixture in Tests/UIComposableCompileFailureFixtures/*.swift; do
     case "$fixture" in
+        *InstanceComposableUIView.swift)
+            expected_diagnostic="static member 'composable' cannot be used on instance"
+            ;;
         *NonComposableUIView.swift)
             expected_diagnostic="has no member 'composable'"
             ;;

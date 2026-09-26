@@ -5,49 +5,49 @@ import UIComposable
 @Test("UIComposable을_채택한_외부_UIView가_composable을_제공한다")
 @MainActor
 func UIComposable을_채택한_외부_UIView가_composable을_제공한다() {
-    _ = UIComposablePublicView().composable()
+    _ = UIComposablePublicView.composable()
 }
 
 @Test("UIComposable을_채택한_외부_UIView가_sizeThatFits_composable을_제공한다")
 @MainActor
 func UIComposable을_채택한_외부_UIView가_sizeThatFits_composable을_제공한다() {
-    _ = UIComposablePublicView().composable(sizeThatFits: { _, _ in nil })
+    _ = UIComposablePublicView.composable(sizeThatFits: { _, _ in nil })
 }
 
 @Test("UIComposable을_채택한_외부_UIViewController가_composable을_제공한다")
 @MainActor
 func UIComposable을_채택한_외부_UIViewController가_composable을_제공한다() {
-    _ = UIComposablePublicViewController().composable()
+    _ = UIComposablePublicViewController.composable()
 }
 
 @Test("UIComposable을_채택한_외부_UIViewController가_sizeThatFits_composable을_제공한다")
 @MainActor
 func UIComposable을_채택한_외부_UIViewController가_sizeThatFits_composable을_제공한다() {
-    _ = UIComposablePublicViewController().composable(sizeThatFits: { _, _ in nil })
+    _ = UIComposablePublicViewController.composable(sizeThatFits: { _, _ in nil })
 }
 
 @Test("UICoordinatedComposable을_채택한_외부_UIView가_composable을_제공한다")
 @MainActor
 func UICoordinatedComposable을_채택한_외부_UIView가_composable을_제공한다() {
-    _ = UICoordinatedPublicView().composable()
+    _ = UICoordinatedPublicView.composable()
 }
 
 @Test("UICoordinatedComposable을_채택한_외부_UIView가_sizeThatFits_composable을_제공한다")
 @MainActor
 func UICoordinatedComposable을_채택한_외부_UIView가_sizeThatFits_composable을_제공한다() {
-    _ = UICoordinatedPublicView().composable(sizeThatFits: { _, _ in nil })
+    _ = UICoordinatedPublicView.composable(sizeThatFits: { _, _ in nil })
 }
 
 @Test("UICoordinatedComposable을_채택한_외부_UIViewController가_composable을_제공한다")
 @MainActor
 func UICoordinatedComposable을_채택한_외부_UIViewController가_composable을_제공한다() {
-    _ = UICoordinatedPublicViewController().composable()
+    _ = UICoordinatedPublicViewController.composable()
 }
 
 @Test("UICoordinatedComposable을_채택한_외부_UIViewController가_sizeThatFits_composable을_제공한다")
 @MainActor
 func UICoordinatedComposable을_채택한_외부_UIViewController가_sizeThatFits_composable을_제공한다() {
-    _ = UICoordinatedPublicViewController().composable(sizeThatFits: { _, _ in nil })
+    _ = UICoordinatedPublicViewController.composable(sizeThatFits: { _, _ in nil })
 }
 
 @MainActor
