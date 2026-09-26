@@ -16,58 +16,53 @@ public protocol UICoordinatedComposable: UIComposable {
 }
 
 @MainActor
-final class ComposableCoordinatorStorage<Coordinator> where Coordinator: AnyObject {
-    var value: Coordinator?
+final class ComposableLifecycleStorage<Content> where Content: AnyObject {
+    private var updateLifecycle: (@MainActor (Content) -> Void)?
+    private var disconnectLifecycle: (@MainActor (Content) -> Void)?
+
+    func connect(_ content: Content) {
+        guard let coordinatedContent = content as? any UICoordinatedComposable else {
+            return
+        }
+
+        configure(coordinatedContent)
+    }
+
+    func update(_ content: Content) {
+        updateLifecycle?(content)
+    }
+
+    func disconnect(_ content: Content) {
+        disconnectLifecycle?(content)
+        updateLifecycle = nil
+        disconnectLifecycle = nil
+    }
+
+    private func configure<CoordinatedContent>(_ content: CoordinatedContent)
+    where CoordinatedContent: UICoordinatedComposable {
+        let coordinator = content.makeCoordinator()
+        content.connect(coordinator: coordinator)
+
+        updateLifecycle = { content in
+            guard let coordinatedContent = content as? CoordinatedContent else {
+                preconditionFailure("연결된 UIComposable 타입이 변경되었습니다.")
+            }
+
+            coordinatedContent.update(coordinator: coordinator)
+        }
+        disconnectLifecycle = { content in
+            guard let coordinatedContent = content as? CoordinatedContent else {
+                preconditionFailure("연결된 UIComposable 타입이 변경되었습니다.")
+            }
+
+            coordinatedContent.disconnect(coordinator: coordinator)
+        }
+    }
 }
 
 @MainActor
 internal struct UIViewBridge<Content>: UIViewRepresentable where Content: UIView & UIComposable {
-    let update: @MainActor (Content) -> Void
-    let sizing: (@MainActor (ProposedViewSize, Content) -> CGSize?)?
-
-    init(update: @escaping @MainActor (Content) -> Void) {
-        self.update = update
-        sizing = nil
-    }
-
-    init(
-        update: @escaping @MainActor (Content) -> Void,
-        sizing: @escaping @MainActor (ProposedViewSize, Content) -> CGSize?
-    ) {
-        self.update = update
-        self.sizing = sizing
-    }
-
-    func makeUIView(context: Context) -> Content {
-        makeContent()
-    }
-
-    func updateUIView(_ uiView: Content, context: Context) {
-        updateContent(uiView)
-    }
-
-    func sizeThatFits(_ proposal: ProposedViewSize, uiView: Content, context: Context) -> CGSize? {
-        sizeContent(proposal, content: uiView)
-    }
-
-    func makeContent() -> Content {
-        let content = Content()
-        update(content)
-        return content
-    }
-
-    func updateContent(_ content: Content) {
-        update(content)
-    }
-
-    func sizeContent(_ proposal: ProposedViewSize, content: Content) -> CGSize? {
-        sizing?(proposal, content)
-    }
-}
-
-@MainActor
-struct CoordinatedUIViewBridge<Content>: UIViewRepresentable where Content: UIView & UICoordinatedComposable {
-    typealias Coordinator = ComposableCoordinatorStorage<Content.Coordinator>
+    typealias Coordinator = ComposableLifecycleStorage<Content>
 
     let update: @MainActor (Content) -> Void
     let sizing: (@MainActor (ProposedViewSize, Content) -> CGSize?)?
@@ -102,31 +97,20 @@ struct CoordinatedUIViewBridge<Content>: UIViewRepresentable where Content: UIVi
     }
 
     static func dismantleUIView(_ uiView: Content, coordinator: Coordinator) {
-        guard let contentCoordinator = coordinator.value else {
-            return
-        }
-
-        uiView.disconnect(coordinator: contentCoordinator)
-        coordinator.value = nil
+        coordinator.disconnect(uiView)
     }
 
     func makeContent(coordinator: Coordinator) -> Content {
         let content = Content()
-        let contentCoordinator = content.makeCoordinator()
-        coordinator.value = contentCoordinator
-        content.connect(coordinator: contentCoordinator)
+        coordinator.connect(content)
         update(content)
-        content.update(coordinator: contentCoordinator)
+        coordinator.update(content)
         return content
     }
 
     func updateContent(_ content: Content, coordinator: Coordinator) {
-        guard let contentCoordinator = coordinator.value else {
-            preconditionFailure("Coordinator가 생성되지 않았습니다.")
-        }
-
         update(content)
-        content.update(coordinator: contentCoordinator)
+        coordinator.update(content)
     }
 
     func sizeContent(_ proposal: ProposedViewSize, content: Content) -> CGSize? {
@@ -136,53 +120,7 @@ struct CoordinatedUIViewBridge<Content>: UIViewRepresentable where Content: UIVi
 
 @MainActor
 internal struct UIViewControllerBridge<Content>: UIViewControllerRepresentable where Content: UIViewController & UIComposable {
-    let update: @MainActor (Content) -> Void
-    let sizing: (@MainActor (ProposedViewSize, Content) -> CGSize?)?
-
-    init(update: @escaping @MainActor (Content) -> Void) {
-        self.update = update
-        sizing = nil
-    }
-
-    init(
-        update: @escaping @MainActor (Content) -> Void,
-        sizing: @escaping @MainActor (ProposedViewSize, Content) -> CGSize?
-    ) {
-        self.update = update
-        self.sizing = sizing
-    }
-
-    func makeUIViewController(context: Context) -> Content {
-        makeContent()
-    }
-
-    func updateUIViewController(_ uiViewController: Content, context: Context) {
-        updateContent(uiViewController)
-    }
-
-    func sizeThatFits(_ proposal: ProposedViewSize, uiViewController: Content, context: Context) -> CGSize? {
-        sizeContent(proposal, content: uiViewController)
-    }
-
-    func makeContent() -> Content {
-        let content = Content()
-        update(content)
-        return content
-    }
-
-    func updateContent(_ content: Content) {
-        update(content)
-    }
-
-    func sizeContent(_ proposal: ProposedViewSize, content: Content) -> CGSize? {
-        sizing?(proposal, content)
-    }
-}
-
-@MainActor
-struct CoordinatedUIViewControllerBridge<Content>: UIViewControllerRepresentable
-where Content: UIViewController & UICoordinatedComposable {
-    typealias Coordinator = ComposableCoordinatorStorage<Content.Coordinator>
+    typealias Coordinator = ComposableLifecycleStorage<Content>
 
     let update: @MainActor (Content) -> Void
     let sizing: (@MainActor (ProposedViewSize, Content) -> CGSize?)?
@@ -217,31 +155,20 @@ where Content: UIViewController & UICoordinatedComposable {
     }
 
     static func dismantleUIViewController(_ uiViewController: Content, coordinator: Coordinator) {
-        guard let contentCoordinator = coordinator.value else {
-            return
-        }
-
-        uiViewController.disconnect(coordinator: contentCoordinator)
-        coordinator.value = nil
+        coordinator.disconnect(uiViewController)
     }
 
     func makeContent(coordinator: Coordinator) -> Content {
         let content = Content()
-        let contentCoordinator = content.makeCoordinator()
-        coordinator.value = contentCoordinator
-        content.connect(coordinator: contentCoordinator)
+        coordinator.connect(content)
         update(content)
-        content.update(coordinator: contentCoordinator)
+        coordinator.update(content)
         return content
     }
 
     func updateContent(_ content: Content, coordinator: Coordinator) {
-        guard let contentCoordinator = coordinator.value else {
-            preconditionFailure("Coordinator가 생성되지 않았습니다.")
-        }
-
         update(content)
-        content.update(coordinator: contentCoordinator)
+        coordinator.update(content)
     }
 
     func sizeContent(_ proposal: ProposedViewSize, content: Content) -> CGSize? {
@@ -264,21 +191,6 @@ public extension UIComposable where Self: UIView {
     }
 }
 
-public extension UICoordinatedComposable where Self: UIView {
-    static func composable(
-        update: @escaping @MainActor (Self) -> Void = { _ in }
-    ) -> some View {
-        CoordinatedUIViewBridge<Self>(update: update)
-    }
-
-    static func composable(
-        update: @escaping @MainActor (Self) -> Void = { _ in },
-        sizeThatFits: @escaping @MainActor (ProposedViewSize, Self) -> CGSize?
-    ) -> some View {
-        CoordinatedUIViewBridge<Self>(update: update, sizing: sizeThatFits)
-    }
-}
-
 public extension UIComposable where Self: UIViewController {
     static func composable(
         update: @escaping @MainActor (Self) -> Void = { _ in }
@@ -291,20 +203,5 @@ public extension UIComposable where Self: UIViewController {
         sizeThatFits: @escaping @MainActor (ProposedViewSize, Self) -> CGSize?
     ) -> some View {
         UIViewControllerBridge<Self>(update: update, sizing: sizeThatFits)
-    }
-}
-
-public extension UICoordinatedComposable where Self: UIViewController {
-    static func composable(
-        update: @escaping @MainActor (Self) -> Void = { _ in }
-    ) -> some View {
-        CoordinatedUIViewControllerBridge<Self>(update: update)
-    }
-
-    static func composable(
-        update: @escaping @MainActor (Self) -> Void = { _ in },
-        sizeThatFits: @escaping @MainActor (ProposedViewSize, Self) -> CGSize?
-    ) -> some View {
-        CoordinatedUIViewControllerBridge<Self>(update: update, sizing: sizeThatFits)
     }
 }
