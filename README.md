@@ -157,21 +157,21 @@ identity가 바뀌면 새 Coordinator가 생성될 수 있어요. 외부 `update
 
 ### 제네릭 제약
 
-`composable(update:)`의 선택은 호출 지점의 정적 타입을 따라요. Coordinator lifecycle이 필요한 제네릭 함수는 `UICoordinatedComposable` 제약을 명시해야 해요.
+`composable(update:)`은 호출 지점의 제네릭 제약과 관계없이 실제 UIKit 객체가 `UICoordinatedComposable`을 채택했는지 확인해요. 다음처럼 `UIComposable` 제약만 사용해도 Coordinator lifecycle을 실행해요.
 
 ```swift
 @MainActor
-func coordinatedView<T>(_ content: T.Type) -> some View
-where T: UICollectionView & UICoordinatedComposable {
+func composableView<T>(_ content: T.Type) -> some View
+where T: UICollectionView & UIComposable {
     content.composable()
 }
 ```
 
-`T: UIComposable`만 선언한 제네릭 함수는 기본 Bridge를 선택하므로 Coordinator lifecycle을 호출하지 않아요.
+기본 `UIComposable` 타입은 외부 `update`만 적용하고, `UICoordinatedComposable` 타입은 `makeCoordinator`, `connect`, `update(coordinator:)`, `disconnect`를 함께 실행해요.
 
 ## 예제 앱
 
-[ExampleApp](Examples/ExampleApp/ExampleApp.xcodeproj)은 `UICollectionView`와 `UICollectionViewController`의 기본, 크기 계산, Coordinator, Coordinator와 크기 계산 경로를 각각 보여줘요. 생명주기 화면에서는 UIKit 객체의 생성 수, Generic 제약에 따른 Bridge 선택, 강한 참조 해제를 확인할 수 있어요. 모두 아홉 화면이며 저장소의 `UIComposable` 패키지를 상대 경로로 사용해요.
+[ExampleApp](Examples/ExampleApp/ExampleApp.xcodeproj)은 `UICollectionView`와 `UICollectionViewController`의 기본, 크기 계산, Coordinator, Coordinator와 크기 계산 경로를 각각 보여줘요. 생명주기 화면에서는 UIKit 객체의 생성 수, 제네릭 제약과 무관한 Coordinator 연결, 강한 참조 해제를 확인할 수 있어요. 모두 아홉 화면이며 저장소의 `UIComposable` 패키지를 상대 경로로 사용해요.
 
 Xcode에서 `Examples/ExampleApp/ExampleApp.xcodeproj`를 열고 `ExampleApp` scheme과 iOS Simulator를 선택해 실행할 수 있어요. 실행 없이 빌드만 확인하려면 저장소 루트에서 다음 명령을 사용해요.
 

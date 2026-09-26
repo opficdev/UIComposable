@@ -50,6 +50,44 @@ func UICoordinatedComposable을_채택한_외부_UIViewController가_sizeThatFit
     _ = UICoordinatedPublicViewController.composable(sizeThatFits: { _, _ in nil })
 }
 
+@Test("UIComposable_제약이_UICoordinatedComposable_UIView의_composable을_제공한다")
+@MainActor
+func UIComposable_제약이_UICoordinatedComposable_UIView의_composable을_제공한다() {
+    _ = composableUIView(UICoordinatedPublicView.self)
+    _ = fittingComposableUIView(UICoordinatedPublicView.self)
+}
+
+@Test("UIComposable_제약이_UICoordinatedComposable_UIViewController의_composable을_제공한다")
+@MainActor
+func UIComposable_제약이_UICoordinatedComposable_UIViewController의_composable을_제공한다() {
+    _ = composableUIViewController(UICoordinatedPublicViewController.self)
+    _ = fittingComposableUIViewController(UICoordinatedPublicViewController.self)
+}
+
+@MainActor
+private func composableUIView<Content>(_ content: Content.Type) -> some View
+where Content: UIView & UIComposable {
+    content.composable()
+}
+
+@MainActor
+private func fittingComposableUIView<Content>(_ content: Content.Type) -> some View
+where Content: UIView & UIComposable {
+    content.composable(sizeThatFits: { _, _ in nil })
+}
+
+@MainActor
+private func composableUIViewController<Content>(_ content: Content.Type) -> some View
+where Content: UIViewController & UIComposable {
+    content.composable()
+}
+
+@MainActor
+private func fittingComposableUIViewController<Content>(_ content: Content.Type) -> some View
+where Content: UIViewController & UIComposable {
+    content.composable(sizeThatFits: { _, _ in nil })
+}
+
 @MainActor
 private final class UIComposablePublicView: UIView, UIComposable {}
 

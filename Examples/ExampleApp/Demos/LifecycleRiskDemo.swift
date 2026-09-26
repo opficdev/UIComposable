@@ -82,18 +82,18 @@ private struct CandidateHost: View, Equatable {
 }
 
 private struct StaticConstraintLifecycleDemo: View {
-    @State private var basicTapCount = 0
+    @State private var genericTapCount = 0
     @State private var coordinatedTapCount = 0
 
     var body: some View {
         DemoRegion(.swiftUI) {
             VStack(alignment: .leading, spacing: 12) {
-                Text("2. 제네릭 제약에 따른 Bridge 선택")
+                Text("2. 제네릭 제약과 무관한 Coordinator 연결")
                     .font(.headline)
-                Text("두 UIButton은 같은 타입입니다. UIComposable 제약으로 감싼 첫 버튼은 Coordinator가 연결되지 않아 눌러도 횟수가 바뀌지 않습니다.")
+                Text("두 UIButton은 같은 타입입니다. UIComposable 제약으로 감싼 첫 버튼도 실제 타입을 확인해 Coordinator를 연결합니다.")
 
                 basicComposable(LifecycleActionButton.self) {
-                    basicTapCount += 1
+                    genericTapCount += 1
                 }
                 .frame(height: 44)
 
@@ -102,7 +102,7 @@ private struct StaticConstraintLifecycleDemo: View {
                 }
                 .frame(height: 44)
 
-                LabeledContent("UIComposable 제약", value: "\(basicTapCount)회")
+                LabeledContent("UIComposable 제약", value: "\(genericTapCount)회")
                 LabeledContent("UICoordinatedComposable 제약", value: "\(coordinatedTapCount)회")
             }
             .frame(maxWidth: .infinity, alignment: .leading)
